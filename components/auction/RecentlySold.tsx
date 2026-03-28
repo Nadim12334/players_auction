@@ -8,9 +8,7 @@ const RecentlySold = () => {
     const { players, teams } = useAuction();
 
     const formatPrice = (amount: number) => {
-        return amount >= 10000000 
-            ? `₹ ${(amount / 10000000).toFixed(2)} Cr` 
-            : `₹ ${(amount / 100000).toFixed(0)} L`;
+        return `${amount.toLocaleString()} pts`;
     };
 
     const soldPlayers = players

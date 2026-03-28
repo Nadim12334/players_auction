@@ -1,10 +1,9 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../../services/api";
 import { Icon } from "@iconify/react";
 
 export default function AdminDashboard() {
+  const [players, setPlayers] = useState<any[]>([]);
   const [teamForm, setTeamForm] = useState({ name: "", purse: "" });
   const [playerForm, setPlayerForm] = useState({
     name: "",
@@ -12,8 +11,21 @@ export default function AdminDashboard() {
     category: "Batsman",
     fromWhere: "",
   });
-  const [loading, setLoading] = useState({ team: false, player: false });
+  const [loading, setLoading] = useState({ team: false, player: false, start: null as number | null });
   const [toast, setToast] = useState({ type: "", text: "", visible: false });
+
+  useEffect(() => {
+    fetchPlayers();
+  }, []);
+
+  const fetchPlayers = async () => {
+    try {
+      const res = await api.get("/players");
+      setPlayers(res.data);
+    } catch (e) {
+      console.error("Failed to fetch players", e);
+    }
+  };
 
   const showToast = (type: "error" | "success", text: string) => {
     setToast({ type, text, visible: true });
@@ -52,6 +64,7 @@ export default function AdminDashboard() {
       });
       showToast("success", `Player "${playerForm.name}" added successfully!`);
       setPlayerForm({ name: "", basePrice: "", category: "Batsman", fromWhere: "" });
+      fetchPlayers();
     } catch (error: any) {
       showToast(
         "error",
@@ -59,6 +72,18 @@ export default function AdminDashboard() {
       );
     } finally {
       setLoading((p) => ({ ...p, player: false }));
+    }
+  };
+
+  const handleStartAuction = async (playerId: number) => {
+    setLoading(p => ({ ...p, start: playerId }));
+    try {
+      await api.post(`/admin/auction/start/${playerId}`);
+      showToast("success", "Auction started!");
+    } catch (error: any) {
+      showToast("error", "Failed to start auction");
+    } finally {
+      setLoading(p => ({ ...p, start: null }));
     }
   };
 
@@ -121,13 +146,13 @@ export default function AdminDashboard() {
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400 ml-1">Total Purse Limit</label>
+              <label className="text-sm font-medium text-zinc-400 ml-1">Total Points Limit</label>
               <div className="relative">
-                <Icon icon="lucide:indian-rupee" className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <Icon icon="lucide:coins" className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" />
                 <input
                   required
                   type="number"
-                  placeholder="e.g. 10000000"
+                  placeholder="e.g. 1000"
                   value={teamForm.purse}
                   onChange={(e) => setTeamForm({ ...teamForm, purse: e.target.value })}
                   className="w-full bg-black/20 border border-white/10 rounded-xl pl-12 pr-5 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all text-white placeholder-zinc-600"
@@ -178,13 +203,13 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-400 ml-1">Base Price</label>
+                <label className="text-sm font-medium text-zinc-400 ml-1">Base Price (Points)</label>
                 <div className="relative">
-                  <Icon icon="lucide:indian-rupee" className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <Icon icon="lucide:coins" className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500" />
                   <input
                     required
                     type="number"
-                    placeholder="2000000"
+                    placeholder="20"
                     value={playerForm.basePrice}
                     onChange={(e) => setPlayerForm({ ...playerForm, basePrice: e.target.value })}
                     className="w-full bg-black/20 border border-white/10 rounded-xl pl-12 pr-5 py-4 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 transition-all text-white placeholder-zinc-600"
@@ -236,9 +261,70 @@ export default function AdminDashboard() {
               )}
             </button>
           </form>
+          </section>
+        </div>
+
+        {/* Auction Queue Section */}
+        <section className="relative bg-white/[0.02] border border-white/5 p-8 rounded-3xl backdrop-blur-xl shadow-2xl overflow-hidden hover:border-cyan-500/30 transition-all duration-500 group">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-cyan-500/20 text-cyan-400 rounded-xl">
+                <Icon icon="lucide:list-ordered" className="text-2xl" />
+              </div>
+              <h2 className="text-3xl font-semibold text-white/90">Auction Queue</h2>
+            </div>
+            <button 
+              onClick={fetchPlayers}
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm flex items-center gap-2 transition-colors"
+            >
+              <Icon icon="lucide:refresh-cw" className="text-sm" /> Refresh List
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-left text-zinc-500 text-sm border-b border-white/5">
+                  <th className="pb-4 font-medium px-4">Name</th>
+                  <th className="pb-4 font-medium px-4">Category</th>
+                  <th className="pb-4 font-medium text-right px-4">Base Price</th>
+                  <th className="pb-4 font-medium text-center px-4">Status</th>
+                  <th className="pb-4 font-medium text-right px-4">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-sm">
+                {players.length === 0 ? (
+                  <tr><td colSpan={5} className="py-12 text-center text-zinc-600">No players found. Add some above!</td></tr>
+                ) : (
+                  players.map((player) => (
+                    <tr key={player.id} className="group hover:bg-white/[0.01] transition-colors">
+                      <td className="py-4 font-medium px-4">{player.name}</td>
+                      <td className="py-4 text-zinc-400 px-4">{player.category}</td>
+                      <td className="py-4 text-right tabular-nums text-zinc-300 px-4">{player.basePrice.toLocaleString()} pts</td>
+                      <td className="py-4 text-center px-4">
+                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${player.sold ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+                          {player.sold ? (player.teamId ? 'Sold' : 'Unsold') : 'Available'}
+                        </span>
+                      </td>
+                      <td className="py-4 text-right px-4">
+                        {!player.sold && (
+                          <button 
+                            disabled={loading.start === player.id}
+                            onClick={() => handleStartAuction(player.id)}
+                            className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow-lg shadow-cyan-900/20"
+                          >
+                            {loading.start === player.id ? "..." : "Bring to Auction"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
 
       </div>
-    </div>
-  );
+    );
 }

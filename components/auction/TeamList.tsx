@@ -5,27 +5,25 @@ import { Icon } from "@iconify/react";
 import { useAuction, Team as AuctionTeam, Bid } from "./AuctionProvider";
 
 const TeamList = () => {
-    const { teams, currentPlayerId, bids } = useAuction();
+    const { teams, players, currentPlayerId } = useAuction();
+    const activePlayer = players.find(p => p.id === currentPlayerId);
 
     const formattedTeams = teams.map((team: AuctionTeam) => {
         const slotsFilled = team.players?.length || 0;
         const _id = team.name.split(" ").map((w: string) => w[0]).join("").toUpperCase();
         
-        // Find if this team currently holds the highest bid for the active player
-        let active = false;
-        if (currentPlayerId) {
-            const currentBidRecord = bids.find((b: Bid) => b.playerId === currentPlayerId);
-            if (currentBidRecord && currentBidRecord.teamId === team.id) {
-                active = true;
-            }
-        }
+        const active = activePlayer?.teamId === team.id;
+
+        const formatPurse = (amount: number) => {
+            return `${amount.toLocaleString()} pts`;
+        };
 
         return {
             id: team.id,
             displayId: _id,
             name: team.name,
             slots: `${slotsFilled}/25`,
-            purse: `₹ ${team.purse / 100} Cr`, 
+            purse: formatPurse(team.purse), 
             active,
             color: "bg-slate-700", // Fallback color since it's not in db
         };

@@ -11,18 +11,18 @@ const PlayerCard = () => {
     const [selectedTeamId, setSelectedTeamId] = useState<number | "">("");
 
     const activePlayer = players.find((p) => p.id === currentPlayerId);
-    
+
     // Default stats since db doesn't have it
     const stats = { matches: 45, strikeRate: 142.5, wickets: 28 };
 
     const handleBid = async (increment: number) => {
         if (!activePlayer) return;
-        
+
         if (!selectedTeamId) {
             alert("Please select a team to bid");
             return;
         }
-        
+
         const nextAmount = (activePlayer.currentBid || activePlayer.basePrice) + increment;
 
         try {
@@ -74,9 +74,8 @@ const PlayerCard = () => {
 
     const currentHighestBidTeam = teams.find(t => t.id === activePlayer.teamId);
     const currentPrice = activePlayer.currentBid || activePlayer.basePrice;
-    const isCr = currentPrice >= 10000000;
-    const displayPrice = isCr ? (currentPrice / 10000000).toFixed(2) : (currentPrice / 100000).toFixed(0);
-    const currencyUnit = isCr ? "Cr" : "L";
+    const displayPrice = currentPrice.toLocaleString();
+    const currencyUnit = "pts";
 
     return (
         <section className="lg:col-span-6 flex flex-col gap-6">
@@ -95,7 +94,7 @@ const PlayerCard = () => {
                             </span>
                             Live Auction
                         </div>
-                        <div className="px-3 py-1 rounded-full bg-slate-950/60 backdrop-blur border border-slate-700 text-xs font-medium text-slate-300 shadow-lg">
+                        <div className="px-3  rounded-full bg-slate-950/60 backdrop-blur border border-slate-700 text-xs font-medium text-slate-300 shadow-lg">
                             Set No. 4 • All-Rounders
                         </div>
                     </div>
@@ -142,9 +141,7 @@ const PlayerCard = () => {
                                         <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
                                             Base Price
                                         </div>
-                                        <div className="text-lg font-mono text-slate-300">
-                                            ₹ {activePlayer.basePrice >= 10000000 ? (activePlayer.basePrice / 10000000).toFixed(2) + " Cr" : (activePlayer.basePrice / 100000).toFixed(0) + " L"}
-                                        </div>
+                                            {activePlayer.basePrice.toLocaleString()} pts
                                     </div>
                                 </div>
 
@@ -190,7 +187,7 @@ const PlayerCard = () => {
                                 <div className="flex items-center gap-4">
                                     <div className="text-5xl md:text-6xl font-display font-medium text-white tracking-tighter glow-text">
                                         <span className="text-2xl text-slate-500 align-top mt-2 inline-block font-sans">
-                                            ₹
+                                            
                                         </span>
                                         {displayPrice}
                                         <span className="text-2xl text-slate-500 align-bottom mb-2 inline-block font-sans ml-1">
@@ -210,14 +207,14 @@ const PlayerCard = () => {
                 <div className="glass-panel p-4 rounded-xl flex flex-col justify-center gap-3">
                     <div className="flex flex-col gap-1">
                         <label className="text-xs text-slate-400">Select Bidding Team</label>
-                        <select 
+                        <select
                             className="bg-slate-800 border border-slate-700 text-white text-sm rounded p-2 focus:outline-none focus:border-cyan-500 transition-colors"
                             value={selectedTeamId}
                             onChange={(e) => setSelectedTeamId(e.target.value ? Number(e.target.value) : "")}
                         >
                             <option value="">-- Choose Team --</option>
                             {teams.map(team => (
-                                <option key={team.id} value={team.id}>{team.name} (Bal: ₹{team.purse >= 10000000 ? (team.purse / 10000000).toFixed(2) + "Cr" : (team.purse / 100000).toFixed(0) + "L"})</option>
+                                <option key={team.id} value={team.id}>{team.name} (Bal: {team.purse.toLocaleString()} pts)</option>
                             ))}
                         </select>
                     </div>
@@ -225,14 +222,14 @@ const PlayerCard = () => {
                     <div>
                         <label className="text-xs text-slate-400 mb-2 block">Bid Increment</label>
                         <div className="grid grid-cols-3 gap-2">
-                            <button onClick={() => handleBid(500000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
-                                + 5L
+                            <button onClick={() => handleBid(500)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
+                                + 500 pts
                             </button>
-                            <button onClick={() => handleBid(1000000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
-                                + 10L
+                            <button onClick={() => handleBid(1000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
+                                + 1000 pts
                             </button>
-                            <button onClick={() => handleBid(2000000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
-                                + 20L
+                            <button onClick={() => handleBid(2000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
+                                + 2000 pts
                             </button>
                         </div>
                     </div>
@@ -240,14 +237,14 @@ const PlayerCard = () => {
 
                 {/* Main Action */}
                 <div className="flex flex-col gap-2">
-                    <button onClick={() => handleBid(activePlayer.currentBid ? 500000 : 0)} disabled={bidLoading} className="flex-1 relative group overflow-hidden rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] flex items-center justify-center p-4">
+                    <button onClick={() => handleBid(activePlayer.currentBid ? 500 : 0)} disabled={bidLoading} className="flex-1 relative group overflow-hidden rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
                         <span className="relative z-10 flex items-center gap-2 text-slate-950 font-bold text-lg uppercase tracking-wider">
                             <Icon icon="solar:gavel-bold" width="20" />
-                            {bidLoading ? "Placing..." : (!activePlayer.currentBid ? "Place Opening Bid" : "Place Next Bid (+ 5L)")}
+                            {bidLoading ? "Placing..." : (!activePlayer.currentBid ? "Place Opening Bid" : "Place Next Bid (+ 500 pts)")}
                         </span>
                     </button>
-                    
+
                     <div className="grid grid-cols-2 gap-2 mt-auto">
                         <button onClick={handleSell} disabled={bidLoading} className="bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-500/30 font-medium p-3 rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                             <Icon icon="solar:check-circle-linear" width="18" />

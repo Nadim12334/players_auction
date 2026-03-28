@@ -45,12 +45,13 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
     const [teams, setTeams] = useState<Team[]>([]);
     const [players, setPlayers] = useState<Player[]>([]);
     const [bids, setBids] = useState<Bid[]>([]);
+    const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Ideally backend emits current active player, for now we will pick the first unsold player
+    // If an activePlayerId is set via admin, use it. Otherwise, use the first unsold player.
     const activePlayers = players.filter((p) => !p.sold);
-    const currentPlayerId = activePlayers.length > 0 ? activePlayers[0].id : null;
+    const currentPlayerId = activePlayerId ?? (activePlayers.length > 0 ? activePlayers[0].id : null);
 
     useEffect(() => {
         const loadInitialData = async () => {
@@ -78,18 +79,19 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
             setBids((prev) => [bidResult, ...prev]);
 
             // We must reload players and teams to get updated purse and currentBid
-            // A more optimized way would be to just update state manually
             api.get("/teams").then(res => setTeams(res.data));
             api.get("/players").then(res => setPlayers(res.data));
         });
 
         socket.on("playerSold", ({ playerId }) => {
+            setActivePlayerId(null); // Clear active player when sold
             api.get("/teams").then(res => setTeams(res.data));
             api.get("/players").then(res => setPlayers(res.data));
         });
 
         socket.on("auctionStarted", (data) => {
-            // handle admin started auction
+            console.log("Auction started for player:", data.playerId);
+            setActivePlayerId(data.playerId);
             api.get("/players").then(res => setPlayers(res.data));
         });
 
