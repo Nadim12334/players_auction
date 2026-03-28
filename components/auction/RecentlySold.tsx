@@ -2,37 +2,31 @@
 
 import React from "react";
 import { Icon } from "@iconify/react";
+import { useAuction, Player, Team } from "./AuctionProvider";
 
 const RecentlySold = () => {
-    const soldPlayers = [
-        {
-            name: "Ben Stokes",
-            category: "All-Rounder",
-            soldTo: "CSK",
-            price: "₹ 16.25 Cr",
-            bgColor: "bg-yellow-500/10",
-            textColor: "text-yellow-500",
-            borderColor: "border-yellow-500/20",
-        },
-        {
-            name: "Harry Brook",
-            category: "Batsman",
-            soldTo: "SRH",
-            price: "₹ 13.25 Cr",
-            bgColor: "bg-orange-500/10",
-            textColor: "text-orange-500",
-            borderColor: "border-orange-500/20",
-        },
-        {
-            name: "Sam Curran",
-            category: "All-Rounder",
-            soldTo: "PBKS",
-            price: "₹ 18.50 Cr",
-            bgColor: "bg-blue-500/10",
-            textColor: "text-blue-400",
-            borderColor: "border-blue-500/20",
-        },
-    ];
+    const { players, teams } = useAuction();
+
+    const formatPrice = (amount: number) => {
+        return amount >= 10000000 
+            ? `₹ ${(amount / 10000000).toFixed(2)} Cr` 
+            : `₹ ${(amount / 100000).toFixed(0)} L`;
+    };
+
+    const soldPlayers = players
+        .filter((p: Player) => p.sold && p.teamId)
+        .map((p: Player) => {
+            const team = teams.find((t: Team) => t.id === p.teamId);
+            return {
+                name: p.name,
+                category: p.category,
+                soldTo: team ? team.name.split(" ").map((w: string)=>w[0]).join("").toUpperCase() : "Unknown",
+                price: formatPrice(p.currentBid || p.basePrice),
+                bgColor: "bg-green-500/10",
+                textColor: "text-green-500",
+                borderColor: "border-green-500/20",
+            };
+        });
 
     return (
         <section className="lg:col-span-12 mt-2">
@@ -51,7 +45,7 @@ const RecentlySold = () => {
                         </tr>
                     </thead>
                     <tbody className="text-sm">
-                        {soldPlayers.map((player, index) => (
+                        {soldPlayers.map((player: any, index: number) => (
                             <tr
                                 key={index}
                                 className={`${index !== soldPlayers.length - 1

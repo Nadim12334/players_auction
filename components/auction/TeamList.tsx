@@ -2,50 +2,34 @@
 
 import React from "react";
 import { Icon } from "@iconify/react";
+import { useAuction, Team as AuctionTeam, Bid } from "./AuctionProvider";
 
 const TeamList = () => {
-    const teams = [
-        {
-            id: "MI",
-            name: "Mumbai Indians",
-            slots: "18/25",
-            purse: "₹ 24.5 Cr",
-            active: true,
-            color: "bg-blue-600",
-        },
-        {
-            id: "CSK",
-            name: "Chennai Kings",
-            slots: "21/25",
-            purse: "₹ 12.2 Cr",
-            active: false,
-            color: "bg-yellow-500",
-        },
-        {
-            id: "RCB",
-            name: "Royal Challengers",
-            slots: "15/25",
-            purse: "₹ 32.0 Cr",
-            active: false,
-            color: "bg-red-600",
-        },
-        {
-            id: "KKR",
-            name: "Knight Riders",
-            slots: "22/25",
-            purse: "₹ 8.5 Cr",
-            active: false,
-            color: "bg-purple-600",
-        },
-        {
-            id: "SRH",
-            name: "Sunrisers",
-            slots: "19/25",
-            purse: "₹ 18.0 Cr",
-            active: false,
-            color: "bg-orange-500",
-        },
-    ];
+    const { teams, currentPlayerId, bids } = useAuction();
+
+    const formattedTeams = teams.map((team: AuctionTeam) => {
+        const slotsFilled = team.players?.length || 0;
+        const _id = team.name.split(" ").map((w: string) => w[0]).join("").toUpperCase();
+        
+        // Find if this team currently holds the highest bid for the active player
+        let active = false;
+        if (currentPlayerId) {
+            const currentBidRecord = bids.find((b: Bid) => b.playerId === currentPlayerId);
+            if (currentBidRecord && currentBidRecord.teamId === team.id) {
+                active = true;
+            }
+        }
+
+        return {
+            id: team.id,
+            displayId: _id,
+            name: team.name,
+            slots: `${slotsFilled}/25`,
+            purse: `₹ ${team.purse / 100} Cr`, 
+            active,
+            color: "bg-slate-700", // Fallback color since it's not in db
+        };
+    });
 
     return (
         <aside className="lg:col-span-3 flex flex-col gap-6 h-full">
@@ -64,7 +48,7 @@ const TeamList = () => {
 
             <div className="glass-panel rounded-xl overflow-hidden flex-1 flex flex-col max-h-[600px]">
                 <div className="overflow-y-auto p-1 space-y-1">
-                    {teams.map((team) => (
+                    {formattedTeams.map((team) => (
                         <div
                             key={team.id}
                             className={`p-3 rounded-lg border flex items-center justify-between group cursor-pointer transition-all ${team.active
@@ -75,10 +59,10 @@ const TeamList = () => {
                             <div className="flex items-center gap-3">
                                 <div
                                     className={`w-10 h-10 rounded-lg ${team.color
-                                        } flex items-center justify-center text-xs font-bold ${team.id === "CSK" ? "text-slate-900" : "text-white"
+                                        } flex items-center justify-center text-xs font-bold ${team.displayId === "CSK" ? "text-slate-900" : "text-white"
                                         } ${team.active ? "shadow-lg shadow-blue-900/50" : ""}`}
                                 >
-                                    {team.id}
+                                    {team.displayId}
                                 </div>
                                 <div>
                                     <div
