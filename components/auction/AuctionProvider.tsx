@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { fetchTeams, fetchPlayers } from "../../services/api";
+import { api } from "../../services/api";
 import { socket } from "../../services/socket";
 
 export type Team = {
@@ -49,18 +49,18 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
     const [error, setError] = useState<string | null>(null);
 
     // Ideally backend emits current active player, for now we will pick the first unsold player
-    const unsoldPlayers = players.filter((p) => !p.sold && !p.teamId);
-    const currentPlayerId = unsoldPlayers.length > 0 ? unsoldPlayers[0].id : null;
+    const activePlayers = players.filter((p) => !p.sold);
+    const currentPlayerId = activePlayers.length > 0 ? activePlayers[0].id : null;
 
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const [teamsData, playersData] = await Promise.all([
-                    fetchTeams(),
-                    fetchPlayers(),
+                const [teamsRes, playersRes] = await Promise.all([
+                    api.get("/teams"),
+                    api.get("/players"),
                 ]);
-                setTeams(teamsData);
-                setPlayers(playersData);
+                setTeams(teamsRes.data);
+                setPlayers(playersRes.data);
             } catch (err: any) {
                 setError(err.message);
             } finally {
@@ -79,18 +79,18 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
 
             // We must reload players and teams to get updated purse and currentBid
             // A more optimized way would be to just update state manually
-            fetchTeams().then(setTeams);
-            fetchPlayers().then(setPlayers);
+            api.get("/teams").then(res => setTeams(res.data));
+            api.get("/players").then(res => setPlayers(res.data));
         });
 
         socket.on("playerSold", ({ playerId }) => {
-            fetchTeams().then(setTeams);
-            fetchPlayers().then(setPlayers);
+            api.get("/teams").then(res => setTeams(res.data));
+            api.get("/players").then(res => setPlayers(res.data));
         });
 
         socket.on("auctionStarted", (data) => {
             // handle admin started auction
-            fetchPlayers().then(setPlayers);
+            api.get("/players").then(res => setPlayers(res.data));
         });
 
         return () => {

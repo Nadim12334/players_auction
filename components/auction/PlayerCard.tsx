@@ -3,11 +3,12 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useAuction } from "./AuctionProvider";
-import { placeBid } from "../../services/api";
+import { api } from "../../services/api";
 
 const PlayerCard = () => {
     const { players, teams, currentPlayerId } = useAuction();
     const [bidLoading, setBidLoading] = useState(false);
+    const [selectedTeamId, setSelectedTeamId] = useState<number | "">("");
 
     const activePlayer = players.find((p) => p.id === currentPlayerId);
     
@@ -17,17 +18,46 @@ const PlayerCard = () => {
     const handleBid = async (increment: number) => {
         if (!activePlayer) return;
         
-        // Use first team as the dummy bidder since no auth is implemented
-        // In a real app, teamId would come from logged in user
-        const dummyTeamId = teams.length > 0 ? teams[0].id : 1; 
+        if (!selectedTeamId) {
+            alert("Please select a team to bid");
+            return;
+        }
         
         const nextAmount = (activePlayer.currentBid || activePlayer.basePrice) + increment;
 
         try {
             setBidLoading(true);
-            await placeBid(activePlayer.id, dummyTeamId, nextAmount);
+            await api.post("/auction/bid", { playerId: activePlayer.id, teamId: Number(selectedTeamId), amount: nextAmount });
         } catch (error: any) {
-            alert(error.message);
+            alert(error.response?.data?.message || error.message);
+        } finally {
+            setBidLoading(false);
+        }
+    };
+
+    const handleSell = async () => {
+        if (!activePlayer) return;
+        if (!activePlayer.teamId) {
+            alert("Cannot sell without any bids. Use Unsold instead.");
+            return;
+        }
+        try {
+            setBidLoading(true);
+            await api.post(`/admin/auction/sell/${activePlayer.id}`);
+        } catch (error: any) {
+            alert(error.response?.data?.message || error.message);
+        } finally {
+            setBidLoading(false);
+        }
+    };
+
+    const handleUnsold = async () => {
+        if (!activePlayer) return;
+        try {
+            setBidLoading(true);
+            await api.post(`/admin/auction/unsold/${activePlayer.id}`);
+        } catch (error: any) {
+            alert(error.response?.data?.message || error.message);
         } finally {
             setBidLoading(false);
         }
@@ -177,31 +207,58 @@ const PlayerCard = () => {
             {/* Action Bar */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Controls */}
-                <div className="glass-panel p-4 rounded-xl flex flex-col justify-center">
-                    <label className="text-xs text-slate-400 mb-3 flex justify-between">
-                        <span>Bid Increment</span>
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                        <button onClick={() => handleBid(500000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
-                            + 5L
-                        </button>
-                        <button onClick={() => handleBid(1000000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
-                            + 10L
-                        </button>
-                        <button onClick={() => handleBid(2000000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
-                            + 20L
-                        </button>
+                <div className="glass-panel p-4 rounded-xl flex flex-col justify-center gap-3">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-400">Select Bidding Team</label>
+                        <select 
+                            className="bg-slate-800 border border-slate-700 text-white text-sm rounded p-2 focus:outline-none focus:border-cyan-500 transition-colors"
+                            value={selectedTeamId}
+                            onChange={(e) => setSelectedTeamId(e.target.value ? Number(e.target.value) : "")}
+                        >
+                            <option value="">-- Choose Team --</option>
+                            {teams.map(team => (
+                                <option key={team.id} value={team.id}>{team.name} (Bal: ₹{team.purse >= 10000000 ? (team.purse / 10000000).toFixed(2) + "Cr" : (team.purse / 100000).toFixed(0) + "L"})</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="text-xs text-slate-400 mb-2 block">Bid Increment</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button onClick={() => handleBid(500000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
+                                + 5L
+                            </button>
+                            <button onClick={() => handleBid(1000000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
+                                + 10L
+                            </button>
+                            <button onClick={() => handleBid(2000000)} disabled={bidLoading} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 border border-slate-700 text-white py-2 rounded text-xs font-medium transition-colors">
+                                + 20L
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Main Action */}
-                <button onClick={() => handleBid(500000)} disabled={bidLoading} className="relative group overflow-hidden rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.5)] flex items-center justify-center p-6">
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-                    <span className="relative z-10 flex items-center gap-3 text-slate-950 font-bold text-xl uppercase tracking-wider">
-                        <Icon icon="solar:gavel-bold" width="24" />
-                        {bidLoading ? "Placing..." : "Place Next Bid (+ 5L)"}
-                    </span>
-                </button>
+                <div className="flex flex-col gap-2">
+                    <button onClick={() => handleBid(activePlayer.currentBid ? 500000 : 0)} disabled={bidLoading} className="flex-1 relative group overflow-hidden rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+                        <span className="relative z-10 flex items-center gap-2 text-slate-950 font-bold text-lg uppercase tracking-wider">
+                            <Icon icon="solar:gavel-bold" width="20" />
+                            {bidLoading ? "Placing..." : (!activePlayer.currentBid ? "Place Opening Bid" : "Place Next Bid (+ 5L)")}
+                        </span>
+                    </button>
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-auto">
+                        <button onClick={handleSell} disabled={bidLoading} className="bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-500/30 font-medium p-3 rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                            <Icon icon="solar:check-circle-linear" width="18" />
+                            Sell Player
+                        </button>
+                        <button onClick={handleUnsold} disabled={bidLoading} className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-medium p-3 rounded-lg text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                            <Icon icon="solar:close-circle-linear" width="18" />
+                            Unsold
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
     );
