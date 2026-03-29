@@ -7,6 +7,7 @@ import { socket } from "../../services/socket";
 export type Team = {
     id: number;
     name: string;
+    logo?: string;
     purse: number;
     players: Player[];
 };
@@ -14,6 +15,8 @@ export type Team = {
 export type Player = {
     id: number;
     name: string;
+    photo?: string;
+    phoneNumber?: string;
     teamId: number | null;
     basePrice: number;
     sold: boolean;

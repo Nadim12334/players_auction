@@ -22,6 +22,7 @@ const TeamList = () => {
             id: team.id,
             displayId: _id,
             name: team.name,
+            logo: team.logo,
             slots: `${slotsFilled}/25`,
             purse: formatPurse(team.purse), 
             active,
@@ -57,10 +58,14 @@ const TeamList = () => {
                             <div className="flex items-center gap-3">
                                 <div
                                     className={`w-10 h-10 rounded-lg ${team.color
-                                        } flex items-center justify-center text-xs font-bold ${team.displayId === "CSK" ? "text-slate-900" : "text-white"
+                                        } flex items-center justify-center text-xs font-bold overflow-hidden ${team.displayId === "CSK" ? "text-slate-900" : "text-white"
                                         } ${team.active ? "shadow-lg shadow-blue-900/50" : ""}`}
                                 >
-                                    {team.displayId}
+                                    {team.logo ? (
+                                        <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        team.displayId
+                                    )}
                                 </div>
                                 <div>
                                     <div
