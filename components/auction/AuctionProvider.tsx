@@ -59,12 +59,14 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const [teamsRes, playersRes] = await Promise.all([
+                const [teamsRes, playersRes, bidsRes] = await Promise.all([
                     api.get("/teams"),
                     api.get("/players"),
+                    api.get("/auction/history"),
                 ]);
                 setTeams(teamsRes.data);
                 setPlayers(playersRes.data);
+                setBids(bidsRes.data);
             } catch (err: any) {
                 setError(err.message);
             } finally {
@@ -87,15 +89,17 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
         });
 
         socket.on("playerSold", ({ playerId }) => {
-            setActivePlayerId(null); // Clear active player when sold
+            setActivePlayerId(null);
             api.get("/teams").then(res => setTeams(res.data));
             api.get("/players").then(res => setPlayers(res.data));
+            api.get("/auction/history").then(res => setBids(res.data));
         });
 
         socket.on("auctionStarted", (data) => {
             console.log("Auction started for player:", data.playerId);
             setActivePlayerId(data.playerId);
             api.get("/players").then(res => setPlayers(res.data));
+            api.get("/auction/history").then(res => setBids(res.data));
         });
 
         return () => {

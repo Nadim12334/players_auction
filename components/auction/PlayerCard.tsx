@@ -73,8 +73,10 @@ const PlayerCard = () => {
     const currentPrice = activePlayer.currentBid || activePlayer.basePrice;
     
     const currentIncrement = currentPrice >= 5000 ? 1000 : 500;
+    const nextSuggestedAmount = activePlayer.currentBid ? currentPrice + currentIncrement : activePlayer.basePrice;
     
-    const displayPrice = currentPrice.toLocaleString();
+    const displayPrice = (activePlayer.currentBid || activePlayer.basePrice).toLocaleString();
+    const displayNext = nextSuggestedAmount.toLocaleString();
     const currencyUnit = "pts";
 
     return (
@@ -211,7 +213,9 @@ const PlayerCard = () => {
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
                         <span className="relative z-10 flex items-center gap-2 text-slate-950 font-bold text-lg uppercase tracking-wider">
                             <Icon icon="solar:gavel-bold" width="20" />
-                            {bidLoading ? "Placing..." : (!activePlayer.currentBid ? "Place Opening Bid" : `Place Next Bid (+ ${currentIncrement.toLocaleString()} pts)`)}
+                            {bidLoading ? "Placing..." : (
+                                !activePlayer.currentBid ? `Place Opening Bid (${activePlayer.basePrice})` : `Bid ${displayNext} (+${currentIncrement})`
+                            )}
                         </span>
                     </button>
 
