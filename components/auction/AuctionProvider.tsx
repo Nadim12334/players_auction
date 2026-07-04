@@ -38,6 +38,7 @@ type AuctionContextType = {
     players: Player[];
     bids: Bid[];
     currentPlayerId: number | null;
+    auctionStatus: "IDLE" | "BIDDING" | "SOLD" | "UNSOLD";
     loading: boolean;
     error: string | null;
 };
@@ -49,24 +50,26 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
     const [players, setPlayers] = useState<Player[]>([]);
     const [bids, setBids] = useState<Bid[]>([]);
     const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
+    const [auctionStatus, setAuctionStatus] = useState<"IDLE" | "BIDDING" | "SOLD" | "UNSOLD">("IDLE");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // If an activePlayerId is set via admin, use it. Otherwise, use the first unsold player.
-    const activePlayers = players.filter((p) => !p.sold);
-    const currentPlayerId = activePlayerId ?? (activePlayers.length > 0 ? activePlayers[0].id : null);
+    const currentPlayerId = activePlayerId;
 
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const [teamsRes, playersRes, bidsRes] = await Promise.all([
+                const [teamsRes, playersRes, bidsRes, stateRes] = await Promise.all([
                     api.get("/teams"),
                     api.get("/players"),
                     api.get("/auction/history"),
+                    api.get("/auction/state"),
                 ]);
                 setTeams(teamsRes.data);
                 setPlayers(playersRes.data);
                 setBids(bidsRes.data);
+                setActivePlayerId(stateRes.data.currentPlayerId);
+                setAuctionStatus(stateRes.data.status);
             } catch (err: any) {
                 setError(err.message);
             } finally {
@@ -80,6 +83,17 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
     useEffect(() => {
         socket.on("connect", () => console.log("Connected to socket:", socket.id));
 
+        socket.on("auctionStateUpdate", (state: { currentPlayerId: number | null, status: "IDLE" | "BIDDING" | "SOLD" | "UNSOLD" }) => {
+            console.log("Auction state updated:", state);
+            setActivePlayerId(state.currentPlayerId);
+            setAuctionStatus(state.status);
+
+            // Refetch active datasets to get correct remaining purses and bids
+            api.get("/teams").then(res => setTeams(res.data));
+            api.get("/players").then(res => setPlayers(res.data));
+            api.get("/auction/history").then(res => setBids(res.data));
+        });
+
         socket.on("newBid", (bidResult: Bid) => {
             setBids((prev) => [bidResult, ...prev]);
 
@@ -89,7 +103,6 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
         });
 
         socket.on("playerSold", ({ playerId }) => {
-            setActivePlayerId(null);
             api.get("/teams").then(res => setTeams(res.data));
             api.get("/players").then(res => setPlayers(res.data));
             api.get("/auction/history").then(res => setBids(res.data));
@@ -102,11 +115,21 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
             api.get("/auction/history").then(res => setBids(res.data));
         });
 
+        socket.on("auctionNext", (data) => {
+            console.log("Auction advanced to next player:", data.playerId);
+            setActivePlayerId(data.playerId);
+            setAuctionStatus("IDLE");
+            api.get("/players").then(res => setPlayers(res.data));
+            api.get("/auction/history").then(res => setBids(res.data));
+        });
+
         return () => {
             socket.off("connect");
+            socket.off("auctionStateUpdate");
             socket.off("newBid");
             socket.off("playerSold");
             socket.off("auctionStarted");
+            socket.off("auctionNext");
         };
     }, []);
 
@@ -117,6 +140,7 @@ export const AuctionProvider = ({ children }: { children: React.ReactNode }) => 
                 players,
                 bids,
                 currentPlayerId,
+                auctionStatus,
                 loading,
                 error,
             }}
