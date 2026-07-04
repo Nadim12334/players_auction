@@ -76,7 +76,7 @@ const PlayerCard = () => {
         return (
             <section className="relative flex flex-col items-center justify-center p-16 bg-slate-900/60 border border-slate-800/80 rounded-3xl min-h-[500px] shadow-2xl backdrop-blur-xl text-center group overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-cyan-600/10 blur-[100px] rounded-full pointer-events-none" />
-                
+
                 <div className="relative z-10 flex flex-col items-center gap-6">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-xl shadow-cyan-500/20 group-hover:scale-105 transition-transform duration-500">
                         <Icon icon="solar:cup-star-bold" className="text-5xl animate-bounce-slow" />
@@ -89,7 +89,7 @@ const PlayerCard = () => {
                             Waiting for the administrator to load the next player to the auction table...
                         </p>
                     </div>
-                    
+
                     {/* Inline Quick Admin Trigger for testing */}
                     <button
                         onClick={() => setShowAdminControls(!showAdminControls)}
@@ -119,10 +119,10 @@ const PlayerCard = () => {
 
     const currentHighestBidTeam = teams.find(t => t.id === activePlayer.teamId);
     const currentPrice = activePlayer.currentBid || activePlayer.basePrice;
-    
+
     const currentIncrement = currentPrice >= 5000 ? 1000 : 500;
     const nextSuggestedAmount = activePlayer.currentBid ? currentPrice + currentIncrement : activePlayer.basePrice;
-    
+
     const displayPrice = (activePlayer.currentBid || activePlayer.basePrice).toLocaleString();
     const displayNext = nextSuggestedAmount.toLocaleString();
     const currencyUnit = "pts";
@@ -180,7 +180,7 @@ const PlayerCard = () => {
                                         UNSOLD
                                     </div>
                                 )}
-                                
+
                                 <div className="text-right">
                                     <span className="text-[10px] uppercase tracking-widest text-slate-500 block">Base Price</span>
                                     <span className="text-lg font-bold text-slate-100">{activePlayer.basePrice.toLocaleString()} {currencyUnit}</span>
@@ -233,7 +233,7 @@ const PlayerCard = () => {
                     <div className="absolute inset-0 bg-emerald-950/95 flex flex-col items-center justify-center text-center p-8 z-30 animate-fade-in">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-500/20 blur-[120px] rounded-full pointer-events-none" />
-                        
+
                         <div className="relative z-10 flex flex-col items-center gap-4 animate-scale-up">
                             <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center text-slate-950 shadow-2xl shadow-emerald-500/40">
                                 <Icon icon="solar:check-circle-bold" className="text-5xl" />

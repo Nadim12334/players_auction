@@ -19,8 +19,8 @@ const LiveFeed = () => {
                     Live Bid History
                 </h2>
                 <div className="flex items-center gap-2 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
-                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-                     <span className="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Live</span>
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Live</span>
                 </div>
             </div>
 
@@ -41,15 +41,14 @@ const LiveFeed = () => {
                     {bids.map((bid, i) => {
                         const team = teams.find(t => t.id === bid.teamId);
                         const player = players.find(p => p.id === bid.playerId);
-                        
+
                         return (
-                            <div 
-                                key={bid.id || i} 
-                                className={`group relative p-3 rounded-xl border transition-all duration-500 ${
-                                    i === 0 
-                                    ? "bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]" 
-                                    : "bg-slate-900/40 border-slate-800/50 hover:border-slate-700/80"
-                                }`}
+                            <div
+                                key={bid.id || i}
+                                className={`group relative p-3 rounded-xl border transition-all duration-500 ${i === 0
+                                        ? "bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]"
+                                        : "bg-slate-900/40 border-slate-800/50 hover:border-slate-700/80"
+                                    }`}
                             >
                                 {i === 0 && (
                                     <div className="absolute -top-1 -right-1">
@@ -59,7 +58,7 @@ const LiveFeed = () => {
                                         </span>
                                     </div>
                                 )}
-                                
+
                                 <div className="flex items-center gap-3">
                                     {team?.logo ? (
                                         <img src={team.logo} className="w-8 h-8 rounded-lg object-cover border border-white/10" alt="" />
@@ -91,7 +90,7 @@ const LiveFeed = () => {
                             </div>
                         );
                     })}
-                    
+
                     {bids.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-12 text-slate-600">
                             <Icon icon="solar:clipboard-list-linear" width="32" className="opacity-20 mb-2" />

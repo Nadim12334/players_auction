@@ -11,7 +11,7 @@ const TeamList = () => {
     const formattedTeams = teams.map((team) => {
         // Count ONLY sold players assigned to this team
         const playersPurchasedCount = team.players?.filter(p => p.sold && p.teamId === team.id).length || 0;
-        
+
         // Check if this team is the current leading bidder for the active player
         const isLeadingBidder = activePlayer && !activePlayer.sold && activePlayer.teamId === team.id;
 
@@ -41,11 +41,10 @@ const TeamList = () => {
                 {formattedTeams.map((team) => (
                     <div
                         key={team.id}
-                        className={`relative rounded-2xl border p-5 flex flex-col justify-between transition-all duration-300 min-h-[140px] bg-slate-900/40 ${
-                            team.isLeadingBidder
-                            ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.2)] bg-gradient-to-b from-slate-950 to-slate-900 scale-[1.02]"
-                            : "border-slate-800/80 hover:border-slate-700/80 hover:bg-slate-900/50"
-                        }`}
+                        className={`relative rounded-2xl border p-5 flex flex-col justify-between transition-all duration-300 min-h-[140px] bg-slate-900/40 ${team.isLeadingBidder
+                                ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.2)] bg-gradient-to-b from-slate-950 to-slate-900 scale-[1.02]"
+                                : "border-slate-800/80 hover:border-slate-700/80 hover:bg-slate-900/50"
+                            }`}
                     >
                         {/* Leading Bidder Pulsing Border */}
                         {team.isLeadingBidder && (

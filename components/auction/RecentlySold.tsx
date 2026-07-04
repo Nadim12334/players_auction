@@ -18,7 +18,7 @@ const RecentlySold = () => {
             return {
                 name: p.name,
                 category: p.category,
-                soldTo: team ? team.name.split(" ").map((w: string)=>w[0]).join("").toUpperCase() : "Unknown",
+                soldTo: team ? team.name.split(" ").map((w: string) => w[0]).join("").toUpperCase() : "Unknown",
                 price: formatPrice(p.currentBid || p.basePrice),
                 bgColor: "bg-green-500/10",
                 textColor: "text-green-500",

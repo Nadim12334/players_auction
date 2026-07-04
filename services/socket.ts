@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const BACKEND_URL = RAW_API_URL.endsWith("/api") ? RAW_API_URL.slice(0, -4) : RAW_API_URL;
 
 export const socket = io(BACKEND_URL, {
   autoConnect: true,

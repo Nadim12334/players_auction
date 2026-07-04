@@ -272,6 +272,10 @@ export default function AdminDashboard() {
       });
       showToast("success", "Bid placed successfully!");
       setCustomBidAmount("");
+      // Refresh local state immediately
+      fetchActiveState();
+      fetchPlayers();
+      fetchTeams();
     } catch (error: any) {
       showToast("error", error?.response?.data?.message || error.message);
     } finally {
@@ -291,6 +295,10 @@ export default function AdminDashboard() {
       await api.post(`/admin/auction/sell/${activePlayer.id}`);
       const winner = teams.find(t => t.id === activePlayer.teamId)?.name;
       showToast("success", `Player SOLD to ${winner}!`);
+      // Refresh local state immediately
+      fetchActiveState();
+      fetchPlayers();
+      fetchTeams();
     } catch (error: any) {
       showToast("error", error?.response?.data?.message || error.message);
     } finally {
@@ -304,6 +312,10 @@ export default function AdminDashboard() {
     try {
       await api.post(`/admin/auction/unsold/${activePlayer.id}`);
       showToast("success", "Player marked as UNSOLD!");
+      // Refresh local state immediately
+      fetchActiveState();
+      fetchPlayers();
+      fetchTeams();
     } catch (error: any) {
       showToast("error", error?.response?.data?.message || error.message);
     } finally {
@@ -321,6 +333,10 @@ export default function AdminDashboard() {
       } else {
         showToast("success", "No more unsold players left!");
       }
+      // Refresh local state immediately
+      fetchActiveState();
+      fetchPlayers();
+      fetchTeams();
     } catch (error: any) {
       showToast("error", error?.response?.data?.message || error.message);
     } finally {
@@ -341,8 +357,8 @@ export default function AdminDashboard() {
       >
         <div
           className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl backdrop-blur-md border ${toast.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-              : "bg-red-500/10 border-red-500/20 text-red-400"
+            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+            : "bg-red-500/10 border-red-500/20 text-red-400"
             }`}
         >
           <Icon icon={toast.type === "success" ? "lucide:check-circle" : "lucide:alert-circle"} className="text-xl" />
@@ -387,9 +403,9 @@ export default function AdminDashboard() {
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${activeState.status === "BIDDING" ? 'bg-cyan-500/10 text-cyan-400' :
-                          activeState.status === "SOLD" ? 'bg-emerald-500/10 text-emerald-400' :
-                            activeState.status === "UNSOLD" ? 'bg-red-500/10 text-red-400' :
-                              'bg-amber-500/10 text-amber-400'
+                        activeState.status === "SOLD" ? 'bg-emerald-500/10 text-emerald-400' :
+                          activeState.status === "UNSOLD" ? 'bg-red-500/10 text-red-400' :
+                            'bg-amber-500/10 text-amber-400'
                         }`}>
                         {activeState.status}
                       </span>
@@ -596,8 +612,8 @@ export default function AdminDashboard() {
                 disabled={loading.team}
                 type="submit"
                 className={`w-full py-4 rounded-xl font-semibold tracking-wide transition-all flex items-center justify-center gap-2 group/btn disabled:opacity-50 disabled:pointer-events-none mt-4 ${editingTeamId
-                    ? "bg-amber-600 hover:bg-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.3)]"
-                    : "bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.3)]"
+                  ? "bg-amber-600 hover:bg-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.3)]"
+                  : "bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.3)]"
                   }`}
               >
                 {loading.team ? (
@@ -683,7 +699,7 @@ export default function AdminDashboard() {
                   <input
                     required
                     type="text"
-                    placeholder="e.g. India, Mumbai"
+                    placeholder="e.g. Satara, Kudal"
                     value={playerForm.fromWhere}
                     onChange={(e) => setPlayerForm({ ...playerForm, fromWhere: e.target.value })}
                     className="w-full bg-black/20 border border-white/10 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 transition-all text-white placeholder-zinc-600"
@@ -725,8 +741,8 @@ export default function AdminDashboard() {
                 disabled={loading.player}
                 type="submit"
                 className={`w-full py-4 rounded-xl font-semibold tracking-wide transition-all flex items-center justify-center gap-2 group/btn disabled:opacity-50 disabled:pointer-events-none mt-4 ${editingPlayerId
-                    ? "bg-amber-600 hover:bg-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.3)]"
-                    : "bg-pink-600 hover:bg-pink-500 shadow-[0_0_20px_rgba(219,39,119,0.3)]"
+                  ? "bg-amber-600 hover:bg-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.3)]"
+                  : "bg-pink-600 hover:bg-pink-500 shadow-[0_0_20px_rgba(219,39,119,0.3)]"
                   }`}
               >
                 {loading.player ? (
