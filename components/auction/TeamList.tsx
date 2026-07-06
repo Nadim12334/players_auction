@@ -37,61 +37,66 @@ const TeamList = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {formattedTeams.map((team) => (
-                    <div
-                        key={team.id}
-                        className={`relative rounded-2xl border p-5 flex flex-col justify-between transition-all duration-300 min-h-[140px] bg-slate-900/40 ${team.isLeadingBidder
-                                ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.2)] bg-gradient-to-b from-slate-950 to-slate-900 scale-[1.02]"
-                                : "border-slate-800/80 hover:border-slate-700/80 hover:bg-slate-900/50"
-                            }`}
-                    >
-                        {/* Leading Bidder Pulsing Border */}
-                        {team.isLeadingBidder && (
-                            <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20 shadow-md">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                                </span>
-                                <span className="text-[9px] text-cyan-400 font-bold uppercase tracking-wider">
-                                    LEADING BID
-                                </span>
-                            </div>
+            <div className="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/20 backdrop-blur-md">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="border-b border-slate-800/80 bg-slate-950/40 text-xs font-bold uppercase tracking-widest text-slate-400">
+                            <th className="py-3.5 px-4">Team Name</th>
+                            <th className="py-3.5 px-4 text-center">Players</th>
+                            <th className="py-3.5 px-4 text-right">Purse Left</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/40 text-sm">
+                        {formattedTeams.map((team) => (
+                            <tr
+                                key={team.id}
+                                className={`transition-all duration-200 ${
+                                    team.isLeadingBidder
+                                        ? "bg-cyan-500/10 text-cyan-400 font-bold border-y border-cyan-500/30"
+                                        : "hover:bg-slate-900/30 text-slate-300 odd:bg-slate-900/10 even:bg-transparent"
+                                }`}
+                            >
+                                <td className="py-2.5 px-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700/80 overflow-hidden flex items-center justify-center font-bold text-xs text-slate-300 shadow-inner flex-shrink-0">
+                                            {team.logo ? (
+                                                <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                team.name.split(" ").map(w => w[0]).join("").toUpperCase()
+                                            )}
+                                        </div>
+                                        <span className="truncate max-w-[150px] sm:max-w-none uppercase tracking-tight text-xs sm:text-sm">
+                                            {team.name}
+                                        </span>
+                                        {team.isLeadingBidder && (
+                                            <span className="ml-1 flex h-2 w-2 relative flex-shrink-0">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="py-2.5 px-4 text-center font-mono font-bold text-xs sm:text-sm">
+                                    {team.purchasedCount}
+                                </td>
+                                <td className={`py-2.5 px-4 text-right font-mono font-bold text-xs sm:text-sm ${team.isLeadingBidder ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                                    ₹{team.purse.toLocaleString()}
+                                </td>
+                            </tr>
+                        ))}
+
+                        {teams.length === 0 && (
+                            <tr>
+                                <td colSpan={3} className="py-12 text-center text-slate-600 bg-slate-900/5">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Icon icon="solar:users-group-two-rounded-linear" width="32" className="opacity-20" />
+                                        <p className="text-xs font-semibold">No franchises found. Create them in Setup dashboard.</p>
+                                    </div>
+                                </td>
+                            </tr>
                         )}
-
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center font-bold text-slate-300 text-lg shadow-inner">
-                                {team.logo ? (
-                                    <img src={team.logo} alt={team.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    team.name.split(" ").map(w => w[0]).join("").toUpperCase()
-                                )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="text-sm font-bold text-white truncate uppercase tracking-tight">
-                                    {team.name}
-                                </div>
-                                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-0.5">
-                                    Players: <span className="text-slate-300 font-mono font-bold">{team.purchasedCount}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-4 pt-3 border-t border-slate-800/40 flex justify-between items-baseline">
-                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Remaining Purse</span>
-                            <span className="text-xl font-bold font-mono text-cyan-400">
-                                {team.purse.toLocaleString()} <span className="text-xs text-slate-500 font-sans font-normal ml-0.5">pts</span>
-                            </span>
-                        </div>
-                    </div>
-                ))}
-
-                {teams.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-slate-600 bg-slate-900/20 border border-slate-800 rounded-2xl flex flex-col items-center gap-2">
-                        <Icon icon="solar:users-group-two-rounded-linear" width="32" className="opacity-20" />
-                        <p className="text-xs font-semibold">No franchises found. Create them in Setup dashboard.</p>
-                    </div>
-                )}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
