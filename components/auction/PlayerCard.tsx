@@ -10,6 +10,9 @@ const PlayerCard = () => {
     const [bidLoading, setBidLoading] = useState(false);
     const [selectedTeamId, setSelectedTeamId] = useState<number | "">("");
     const [showAdminControls, setShowAdminControls] = useState(false);
+    const [customIncrement, setCustomIncrement] = useState<string>("");
+
+    const BID_INCREMENTS = [500, 1000, 2000, 3000, 4000, 5000];
 
     const activePlayer = players.find((p) => p.id === currentPlayerId);
 
@@ -120,11 +123,7 @@ const PlayerCard = () => {
     const currentHighestBidTeam = teams.find(t => t.id === activePlayer.teamId);
     const currentPrice = activePlayer.currentBid || activePlayer.basePrice;
 
-    const currentIncrement = currentPrice >= 5000 ? 1000 : 500;
-    const nextSuggestedAmount = activePlayer.currentBid ? currentPrice + currentIncrement : activePlayer.basePrice;
-
     const displayPrice = (activePlayer.currentBid || activePlayer.basePrice).toLocaleString();
-    const displayNext = nextSuggestedAmount.toLocaleString();
     const currencyUnit = "pts";
 
     return (
@@ -309,28 +308,52 @@ const PlayerCard = () => {
                             </select>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2">
-                            <button onClick={() => handleBid(currentIncrement)} disabled={bidLoading || auctionStatus !== "BIDDING"} className="bg-slate-900 hover:bg-slate-800 disabled:opacity-30 border border-slate-800 text-white py-3 rounded-xl text-xs font-semibold transition-all">
-                                + {currentIncrement.toLocaleString()} pts
-                            </button>
-                            <button onClick={() => handleBid(currentIncrement * 2)} disabled={bidLoading || auctionStatus !== "BIDDING"} className="bg-slate-900 hover:bg-slate-800 disabled:opacity-30 border border-slate-800 text-white py-3 rounded-xl text-xs font-semibold transition-all">
-                                + {(currentIncrement * 2).toLocaleString()}
-                            </button>
-                            <button onClick={() => handleBid(currentIncrement * 4)} disabled={bidLoading || auctionStatus !== "BIDDING"} className="bg-slate-900 hover:bg-slate-800 disabled:opacity-30 border border-slate-800 text-white py-3 rounded-xl text-xs font-semibold transition-all">
-                                + {(currentIncrement * 4).toLocaleString()}
-                            </button>
+                        {/* Fixed Increment Buttons 3x2 Grid */}
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Quick Increment</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {BID_INCREMENTS.map((inc) => (
+                                    <button
+                                        key={inc}
+                                        onClick={() => handleBid(inc)}
+                                        disabled={bidLoading || auctionStatus !== "BIDDING"}
+                                        className="bg-slate-900 hover:bg-indigo-600 text-white hover:text-slate-950 border border-slate-800 hover:border-indigo-500 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-30"
+                                    >
+                                        +₹{inc.toLocaleString()}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        <button
-                            onClick={() => handleBid(activePlayer.currentBid ? currentIncrement : 0)}
-                            disabled={bidLoading || auctionStatus !== "BIDDING"}
-                            className="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-30"
-                        >
-                            <Icon icon="solar:gavel-bold" className="text-lg" />
-                            {bidLoading ? "Placing..." : (
-                                !activePlayer.currentBid ? `Place Opening Bid (${activePlayer.basePrice})` : `Place Bid (${displayNext})`
-                            )}
-                        </button>
+                        {/* Custom Increment Input */}
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Custom Increment</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="number"
+                                    placeholder="e.g. 750"
+                                    disabled={bidLoading || auctionStatus !== "BIDDING"}
+                                    value={customIncrement}
+                                    onChange={(e) => setCustomIncrement(e.target.value)}
+                                    className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-500 flex-1 font-mono text-white placeholder-slate-600"
+                                />
+                                <button
+                                    onClick={() => {
+                                        const inc = Number(customIncrement);
+                                        if (!inc || isNaN(inc) || inc <= 0) {
+                                            alert("Please enter a valid increment amount");
+                                            return;
+                                        }
+                                        handleBid(inc);
+                                        setCustomIncrement("");
+                                    }}
+                                    disabled={bidLoading || auctionStatus !== "BIDDING"}
+                                    className="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs uppercase tracking-wider disabled:opacity-30 whitespace-nowrap"
+                                >
+                                    Place Bid
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Right: State Management */}

@@ -28,6 +28,16 @@ export default function AdminDashboard() {
   const [selectedBidTeamId, setSelectedBidTeamId] = useState<number | "">("");
   const [customBidAmount, setCustomBidAmount] = useState<string>("");
 
+  // Bulk Player Import States
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [importSummary, setImportSummary] = useState<any>(null);
+
+  // Inline Base Price Edit States
+  const [editingPlayerBasePriceId, setEditingPlayerBasePriceId] = useState<number | null>(null);
+  const [editingBasePrice, setEditingBasePrice] = useState<string>("");
+
   useEffect(() => {
     fetchPlayers();
     fetchTeams();
@@ -229,6 +239,69 @@ export default function AdminDashboard() {
     window.scrollTo({ top: 300, behavior: 'smooth' });
   };
 
+  const handleImportSubmit = async () => {
+    if (!importFile) return;
+    setUploading(true);
+    setUploadProgress(10);
+    const formData = new FormData();
+    formData.append("file", importFile);
+
+    // Simulate progress bar movement
+    const interval = setInterval(() => {
+      setUploadProgress((p) => {
+        if (p >= 90) {
+          clearInterval(interval);
+          return 90;
+        }
+        return p + 10;
+      });
+    }, 100);
+
+    try {
+      const res = await api.post("/admin/players/import", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      clearInterval(interval);
+      setUploadProgress(100);
+      setTimeout(() => {
+        setUploading(false);
+        setImportSummary(res.data);
+        setImportFile(null);
+        showToast("success", "Players imported successfully!");
+        fetchPlayers();
+      }, 500);
+    } catch (err: any) {
+      clearInterval(interval);
+      setUploading(false);
+      showToast("error", err?.response?.data?.error || "Import failed.");
+    }
+  };
+
+  const handleSaveInlineBasePrice = async (player: any) => {
+    try {
+      const parsedPrice = Number(editingBasePrice);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        showToast("error", "Please enter a valid base price.");
+        return;
+      }
+      await api.put(`/players/${player.id}`, {
+        name: player.name,
+        basePrice: parsedPrice,
+        category: player.category,
+        fromWhere: player.fromWhere,
+        photo: player.photo || "",
+        phoneNumber: player.phoneNumber || "",
+      });
+      showToast("success", `Base price updated for ${player.name}`);
+      setEditingPlayerBasePriceId(null);
+      fetchPlayers();
+    } catch (error: any) {
+      showToast("error", error?.response?.data?.error || "Failed to update base price.");
+    }
+  };
+
   // Live Controller Functions
   const handleStartAuction = async (playerId: number) => {
     setLoading(p => ({ ...p, start: playerId }));
@@ -345,7 +418,7 @@ export default function AdminDashboard() {
   };
 
   const activeLeadingTeam = teams.find(t => t.id === activePlayer?.teamId);
-  const incrementAmount = activePlayer ? ((activePlayer.currentBid || activePlayer.basePrice) >= 5000 ? 1000 : 500) : 500;
+  const BID_INCREMENTS = [500, 1000, 2000, 3000, 4000, 5000];
 
   return (
     <div className="min-h-screen bg-[#090a0f] text-white p-6 md:p-12 font-sans selection:bg-purple-500/30">
@@ -462,11 +535,11 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Custom Bid Amount</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Custom Increment Amount</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
-                      placeholder="Enter amount manually"
+                      placeholder="e.g. 750"
                       disabled={!activePlayer || activeState.status !== "BIDDING"}
                       value={customBidAmount}
                       onChange={(e) => setCustomBidAmount(e.target.value)}
@@ -477,26 +550,24 @@ export default function AdminDashboard() {
                       disabled={loading.action || !activePlayer || activeState.status !== "BIDDING"}
                       className="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs uppercase tracking-wider disabled:opacity-30"
                     >
-                      Bid Custom
+                      Place Bid
                     </button>
                   </div>
                 </div>
               </div>
 
               {activePlayer && activeState.status === "BIDDING" && (
-                <div className="grid grid-cols-2 gap-2 mt-auto">
-                  <button
-                    onClick={() => handleAdminPlaceBid(incrementAmount)}
-                    className="bg-slate-900 hover:bg-slate-850 text-white border border-slate-800 p-3 rounded-xl text-xs font-semibold"
-                  >
-                    + {incrementAmount.toLocaleString()} pts
-                  </button>
-                  <button
-                    onClick={() => handleAdminPlaceBid(incrementAmount * 2)}
-                    className="bg-slate-900 hover:bg-slate-850 text-white border border-slate-800 p-3 rounded-xl text-xs font-semibold"
-                  >
-                    + {(incrementAmount * 2).toLocaleString()} pts
-                  </button>
+                <div className="grid grid-cols-3 gap-2 mt-auto">
+                  {BID_INCREMENTS.map((inc) => (
+                    <button
+                      key={inc}
+                      onClick={() => handleAdminPlaceBid(inc)}
+                      disabled={loading.action}
+                      className="bg-slate-900 hover:bg-indigo-600 text-white hover:text-slate-950 border border-slate-800 hover:border-indigo-500 p-3 rounded-xl text-xs font-bold transition-all disabled:opacity-30"
+                    >
+                      +₹{inc.toLocaleString()}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -817,6 +888,200 @@ export default function AdminDashboard() {
           </div>
         </section>
 
+        {/* Bulk Player Import Section */}
+        <section className="relative bg-white/[0.02] border border-white/5 p-8 rounded-3xl backdrop-blur-xl shadow-2xl overflow-hidden hover:border-cyan-500/30 transition-colors duration-500 group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 -mr-16 -mt-16 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all" />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-white/5 pb-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-cyan-500/20 text-cyan-400 rounded-xl">
+                <Icon icon="solar:file-text-bold" className="text-2xl" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-semibold text-white/90">Bulk Import Players</h2>
+                <p className="text-xs text-zinc-400 mt-1">Upload an Excel (.xlsx) or CSV (.csv) file containing player registrations</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const headers = ["Full Name", "Mobile Number", "Category", "Village / City (From Where)", "Player Photo (optional)"];
+                const rows = [
+                  ["Rohit Patil", "9876543210", "Batsman", "Kudal", ""],
+                  ["Rohit Patil", "9988776655", "Bowler", "Medha", ""],
+                  ["Rohit Patil", "9765432109", "All-Rounder", "Satara", ""],
+                  ["Suresh Kumar", "9123456789", "Wicket Keeper", "Karad", ""]
+                ];
+                let csvContent = "data:text/csv;charset=utf-8," 
+                  + headers.join(",") + "\n"
+                  + rows.map(r => r.join(",")).join("\n");
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "players_import_template.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1.5 transition-colors border border-cyan-500/20 hover:border-cyan-500/40 px-3 py-1.5 rounded-lg bg-cyan-500/5 cursor-pointer self-start"
+            >
+              <Icon icon="solar:download-bold" /> Download CSV Template
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* File Upload Zone */}
+            <div className="lg:col-span-6 space-y-4">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add("border-cyan-500", "bg-cyan-500/5");
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove("border-cyan-500", "bg-cyan-500/5");
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove("border-cyan-500", "bg-cyan-500/5");
+                  const file = e.dataTransfer.files?.[0];
+                  if (file && (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.name.endsWith(".csv"))) {
+                    setImportFile(file);
+                    setImportSummary(null);
+                  } else {
+                    showToast("error", "Please upload a valid Excel or CSV file.");
+                  }
+                }}
+                onClick={() => document.getElementById("bulk-file-input")?.click()}
+                className="border-2 border-dashed border-white/10 hover:border-cyan-500/50 bg-black/10 hover:bg-cyan-500/[0.02] rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 min-h-[180px]"
+              >
+                <input
+                  id="bulk-file-input"
+                  type="file"
+                  accept=".xlsx, .xls, .csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImportFile(file);
+                      setImportSummary(null);
+                    }
+                  }}
+                />
+                <div className="w-12 h-12 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-3 border border-cyan-500/20 transition-transform">
+                  <Icon icon="solar:cloud-upload-bold-duotone" className="text-2xl" />
+                </div>
+                {importFile ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-white max-w-[250px] truncate">{importFile.name}</p>
+                    <p className="text-xs text-zinc-500">{(importFile.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-white">Drag & drop your Excel or CSV file</p>
+                    <p className="text-xs text-zinc-500">or click to browse local files</p>
+                  </div>
+                )}
+              </div>
+
+              {importFile && (
+                <div className="flex gap-3 animate-fade-in">
+                  <button
+                    onClick={handleImportSubmit}
+                    disabled={uploading}
+                    className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                  >
+                    {uploading ? (
+                      <>
+                        <Icon icon="lucide:loader-2" className="animate-spin text-lg" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Icon icon="solar:import-bold" className="text-lg" />
+                        Upload & Import Players
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setImportFile(null)}
+                    disabled={uploading}
+                    className="px-5 border border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white rounded-xl text-xs font-bold uppercase transition-all"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+
+              {uploading && (
+                <div className="space-y-2 animate-fade-in">
+                  <div className="flex justify-between text-xs text-zinc-400">
+                    <span>Uploading and parsing file...</span>
+                    <span className="font-semibold text-cyan-400">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden border border-white/5">
+                    <div
+                      className="bg-cyan-500 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Summary Dashboard / Results Zone */}
+            <div className="lg:col-span-6 flex flex-col justify-between min-h-[180px]">
+              {importSummary ? (
+                <div className="space-y-4 flex-1 flex flex-col justify-between animate-fade-in">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-1.5">
+                      <Icon icon="solar:chart-square-bold" /> Import Summary
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="bg-slate-900/60 border border-white/5 p-3 rounded-xl text-center">
+                        <span className="text-[10px] text-zinc-500 uppercase font-bold block">Total Rows</span>
+                        <span className="text-xl font-bold text-slate-100">{importSummary.totalRows}</span>
+                      </div>
+                      <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl text-center">
+                        <span className="text-[10px] text-emerald-400 uppercase font-bold block">Imported</span>
+                        <span className="text-xl font-bold text-emerald-400">{importSummary.imported}</span>
+                      </div>
+                      <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-center">
+                        <span className="text-[10px] text-amber-400 uppercase font-bold block">Duplicates</span>
+                        <span className="text-xl font-bold text-amber-400">{importSummary.duplicates}</span>
+                      </div>
+                      <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl text-center">
+                        <span className="text-[10px] text-red-400 uppercase font-bold block">Invalid</span>
+                        <span className="text-xl font-bold text-red-400">{importSummary.invalidRows}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {importSummary.errors && importSummary.errors.length > 0 && (
+                    <div className="mt-2">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-red-400 block mb-2 flex items-center gap-1.5">
+                        <Icon icon="solar:danger-bold" /> Parsing & Database Errors ({importSummary.errors.length})
+                      </span>
+                      <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-3 max-h-[120px] overflow-y-auto text-xs text-red-400/90 font-mono space-y-1.5 scrollbar-thin scrollbar-thumb-red-900/30">
+                        {importSummary.errors.map((err: string, idx: number) => (
+                          <div key={idx} className="border-b border-red-900/10 pb-1.5 last:border-0 last:pb-0">
+                            {err}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center text-zinc-600 border border-dashed border-white/5 rounded-2xl bg-black/5 p-6 min-h-[180px]">
+                  <Icon icon="solar:info-circle-bold-duotone" className="text-3xl opacity-30 mb-2" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Ready to import</p>
+                  <p className="text-[10px] text-zinc-600 max-w-[320px] mt-1">Select and upload an Excel or CSV file. Duplicate mobile numbers will automatically be skipped, and valid rows will be imported.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
         {/* Auction Queue Section */}
         <section className="relative bg-white/[0.02] border border-white/5 p-8 rounded-3xl backdrop-blur-xl shadow-2xl overflow-hidden hover:border-cyan-500/30 transition-all duration-500 group">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -838,27 +1103,50 @@ export default function AdminDashboard() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="text-left text-zinc-500 text-sm border-b border-white/5">
-                  <th className="pb-4 font-medium px-4">Player</th>
+                  <th className="pb-4 font-medium px-4">Player Photo</th>
+                  <th className="pb-4 font-medium px-4">Full Name</th>
+                  <th className="pb-4 font-medium px-4">Mobile Number</th>
                   <th className="pb-4 font-medium px-4">Category</th>
-                  <th className="pb-4 font-medium text-right px-4">Base Price</th>
+                  <th className="pb-4 font-medium px-4">Village / City</th>
+                  <th className="pb-4 font-medium text-right px-4">Base Price (Editable)</th>
                   <th className="pb-4 font-medium text-center px-4">Status</th>
                   <th className="pb-4 font-medium text-right px-4">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-sm">
                 {players.length === 0 ? (
-                  <tr><td colSpan={5} className="py-12 text-center text-zinc-600">No players found. Add some above!</td></tr>
+                  <tr><td colSpan={8} className="py-12 text-center text-zinc-600">No players found. Add some above!</td></tr>
                 ) : (
                   players.map((player) => (
                     <tr key={player.id} className="group hover:bg-white/[0.01] transition-colors">
                       <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <img src={player.photo} className="w-8 h-8 rounded-full object-cover border border-white/5" alt="" />
-                          <span className="font-medium">{player.name}</span>
-                        </div>
+                        <img 
+                          src={player.photo || "https://images.unsplash.com/photo-1624194686522-83788533d11b?q=80&w=800&auto=format&fit=crop"} 
+                          className="w-10 h-10 rounded-full object-cover border border-white/5" 
+                          alt="" 
+                        />
                       </td>
-                      <td className="py-4 text-zinc-400 px-4">{player.category}</td>
-                      <td className="py-4 text-right tabular-nums text-zinc-300 px-4">{player.basePrice.toLocaleString()} pts</td>
+                      <td className="py-4 px-4 font-medium text-white">{player.name}</td>
+                      <td className="py-4 px-4 text-zinc-400 font-mono">{player.phoneNumber || "N/A"}</td>
+                      <td className="py-4 px-4 text-zinc-400">{player.category}</td>
+                      <td className="py-4 px-4 text-zinc-400">{player.fromWhere || "Local"}</td>
+                      <td className="py-4 text-right px-4">
+                        {editingPlayerBasePriceId === player.id ? (
+                          <div className="flex justify-end items-center gap-1">
+                            <input
+                              type="number"
+                              value={editingBasePrice}
+                              onChange={(e) => setEditingBasePrice(e.target.value)}
+                              className="bg-slate-900 border border-cyan-500/50 rounded px-2.5 py-1 text-xs text-right w-24 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono"
+                            />
+                            <span className="text-[10px] text-zinc-500">pts</span>
+                          </div>
+                        ) : (
+                          <span className="tabular-nums text-zinc-300 font-medium">
+                            {player.basePrice.toLocaleString()} pts
+                          </span>
+                        )}
+                      </td>
                       <td className="py-4 text-center px-4">
                         <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${player.sold ? (player.teamId ? 'bg-red-500/10 text-red-500' : 'bg-rose-500/10 text-rose-500') : 'bg-green-500/10 text-green-500'}`}>
                           {player.sold ? (player.teamId ? 'Sold' : 'Unsold') : 'Available'}
@@ -866,27 +1154,49 @@ export default function AdminDashboard() {
                       </td>
                       <td className="py-4 text-right px-4">
                         <div className="flex items-center justify-end gap-2">
-                          {!player.sold && (
-                            <button
-                              disabled={loading.start === player.id || activeState.status === "BIDDING"}
-                              onClick={() => handleStartAuction(player.id)}
-                              className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-30 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-cyan-900/20 uppercase tracking-wider"
-                            >
-                              {loading.start === player.id ? "..." : "Load to Table"}
-                            </button>
+                          {editingPlayerBasePriceId === player.id ? (
+                            <>
+                              <button
+                                onClick={() => handleSaveInlineBasePrice(player)}
+                                className="p-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 rounded-lg transition-all text-xs font-bold flex items-center gap-1"
+                              >
+                                <Icon icon="lucide:check" /> Save
+                              </button>
+                              <button
+                                onClick={() => setEditingPlayerBasePriceId(null)}
+                                className="p-1.5 px-3 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg transition-all text-xs flex items-center gap-1"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {!player.sold && (
+                                <button
+                                  disabled={loading.start === player.id || activeState.status === "BIDDING"}
+                                  onClick={() => handleStartAuction(player.id)}
+                                  className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-30 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-cyan-900/20 uppercase tracking-wider"
+                                >
+                                  {loading.start === player.id ? "..." : "Load to Table"}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  setEditingPlayerBasePriceId(player.id);
+                                  setEditingBasePrice(player.basePrice.toString());
+                                }}
+                                className="p-1.5 px-2.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-lg transition-all text-xs flex items-center gap-1"
+                              >
+                                <Icon icon="lucide:edit-3" /> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeletePlayer(player.id)}
+                                className="p-1.5 px-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all text-xs flex items-center gap-1"
+                              >
+                                <Icon icon="lucide:trash-2" /> Delete
+                              </button>
+                            </>
                           )}
-                          <button
-                            onClick={() => handleEditPlayer(player)}
-                            className="p-1.5 px-2 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-lg transition-all text-xs flex items-center gap-1"
-                          >
-                            <Icon icon="lucide:edit-3" /> Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeletePlayer(player.id)}
-                            className="p-1.5 px-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all text-xs flex items-center gap-1"
-                          >
-                            <Icon icon="lucide:trash-2" /> Delete
-                          </button>
                         </div>
                       </td>
                     </tr>
