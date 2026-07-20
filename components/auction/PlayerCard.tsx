@@ -127,14 +127,14 @@ const PlayerCard = () => {
     const currencyUnit = "pts";
 
     return (
-        <section className="flex flex-col gap-6 relative">
-            <div className="relative bg-slate-950 border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl group min-h-[480px]">
+        <section className="flex flex-col gap-4 relative">
+            <div className="relative bg-slate-950 border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl group min-h-[300px] md:min-h-[340px]">
                 {/* Glow behind card */}
-                <div className="absolute top-0 left-1/4 w-1/2 h-48 bg-gradient-to-b from-cyan-500/10 to-transparent blur-3xl rounded-full pointer-events-none"></div>
+                <div className="absolute top-0 left-1/4 w-1/2 h-32 bg-gradient-to-b from-cyan-500/10 to-transparent blur-3xl rounded-full pointer-events-none"></div>
 
-                <div className="flex flex-col md:flex-row min-h-[480px]">
+                <div className="flex flex-col md:flex-row min-h-[300px] md:min-h-[340px]">
                     {/* Left Panel: Photo */}
-                    <div className="w-full md:w-5/12 relative bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 flex items-end justify-center overflow-hidden border-b md:border-b-0 md:border-r border-slate-800/40">
+                    <div className="w-full md:w-4/12 relative bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 flex items-end justify-center overflow-hidden border-b md:border-b-0 md:border-r border-slate-800/40 h-[220px] md:h-auto">
                         <img
                             src={activePlayer.photo || "https://images.unsplash.com/photo-1624194686522-83788533d11b?q=80&w=800&auto=format&fit=crop"}
                             className="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105"
@@ -143,54 +143,54 @@ const PlayerCard = () => {
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
 
                         {/* Category Badge */}
-                        <div className="absolute top-4 left-4">
-                            <span className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-xl border border-indigo-400/20">
+                        <div className="absolute top-3 left-3">
+                            <span className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-md shadow-xl border border-indigo-400/20">
                                 {activePlayer.category}
                             </span>
                         </div>
                     </div>
 
                     {/* Right Panel: Player Details */}
-                    <div className="w-full md:w-7/12 p-8 flex flex-col justify-between relative">
+                    <div className="w-full md:w-8/12 p-5 flex flex-col justify-between relative gap-4">
                         {/* Heading & Status */}
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center gap-2">
                                 {auctionStatus === "BIDDING" ? (
-                                    <div className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-xs font-semibold text-cyan-400 flex items-center gap-1.5 shadow-lg">
-                                        <span className="relative flex h-2 w-2">
+                                    <div className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 flex items-center gap-1.5 shadow-lg">
+                                        <span className="relative flex h-1.5 w-1.5">
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500"></span>
                                         </span>
-                                        LIVE BIDDING
+                                        LIVE
                                     </div>
                                 ) : auctionStatus === "IDLE" ? (
-                                    <div className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-400 flex items-center gap-1.5 shadow-lg">
+                                    <div className="px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-400 flex items-center gap-1 shadow-lg">
                                         <Icon icon="solar:clock-circle-bold" />
-                                        READY FOR AUCTION
+                                        READY
                                     </div>
                                 ) : auctionStatus === "SOLD" ? (
-                                    <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400 flex items-center gap-1.5 shadow-lg">
+                                    <div className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 flex items-center gap-1 shadow-lg">
                                         <Icon icon="solar:check-circle-bold" />
                                         SOLD
                                     </div>
                                 ) : (
-                                    <div className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400 flex items-center gap-1.5 shadow-lg">
+                                    <div className="px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400 flex items-center gap-1 shadow-lg">
                                         <Icon icon="solar:close-circle-bold" />
                                         UNSOLD
                                     </div>
                                 )}
 
                                 <div className="text-right">
-                                    <span className="text-[10px] uppercase tracking-widest text-slate-500 block">Base Price</span>
-                                    <span className="text-lg font-bold text-slate-100">{activePlayer.basePrice.toLocaleString()} {currencyUnit}</span>
+                                    <span className="text-[9px] uppercase tracking-widest text-slate-500 block font-semibold">Base Price</span>
+                                    <span className="text-sm font-semibold text-slate-100">{activePlayer.basePrice.toLocaleString()} {currencyUnit}</span>
                                 </div>
                             </div>
 
-                            <div className="space-y-1">
-                                <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight uppercase leading-none">
+                            <div className="space-y-0.5">
+                                <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight uppercase leading-none">
                                     {activePlayer.name}
                                 </h1>
-                                <div className="flex items-center gap-2 text-slate-400 text-sm">
+                                <div className="flex items-center gap-1.5 text-slate-400 text-xs">
                                     <Icon icon="solar:flag-bold" className="text-slate-500" />
                                     <span className="font-medium">{activePlayer.fromWhere || "Local Player"}</span>
                                 </div>
@@ -198,28 +198,28 @@ const PlayerCard = () => {
                         </div>
 
                         {/* Bid Displays */}
-                        <div className="mt-8 pt-6 border-t border-slate-800/60 space-y-4">
-                            <div className="flex justify-between items-end">
-                                <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                                    {activePlayer.currentBid ? "Current Highest Bid" : "Opening Bid"}
+                        <div className="mt-2 pt-3 border-t border-slate-800/60 space-y-2">
+                            <div className="flex justify-between items-end gap-2 flex-wrap">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                    {activePlayer.currentBid ? "Current Bid" : "Opening Bid"}
                                 </span>
                                 {currentHighestBidTeam && (
-                                    <div className="flex items-center gap-2 text-xs text-slate-300 bg-slate-900 border border-slate-800 rounded-full px-3 py-1">
+                                    <div className="flex items-center gap-1.5 text-[10px] text-slate-300 bg-slate-900 border border-slate-800 rounded-full px-2 py-0.5">
                                         <Icon icon="solar:gavel-bold" className="text-cyan-400" />
-                                        <span>Bid Held By:</span>
+                                        <span>Held By:</span>
                                         {currentHighestBidTeam.logo && (
-                                            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/10">
+                                            <div className="w-4 h-4 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
                                                 <img src={currentHighestBidTeam.logo} alt="" className="w-full h-full object-cover" />
                                             </div>
                                         )}
-                                        <span className="text-white font-bold">{currentHighestBidTeam.name}</span>
+                                        <span className="text-white font-bold truncate max-w-[80px]">{currentHighestBidTeam.name}</span>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="text-6xl md:text-7xl font-black text-white tracking-tighter glow-text flex items-baseline">
+                            <div className="text-4xl md:text-5xl font-black text-white tracking-tighter glow-text flex items-baseline">
                                 {displayPrice}
-                                <span className="text-2xl text-slate-500 font-medium ml-2">
+                                <span className="text-sm text-slate-500 font-medium ml-1.5">
                                     {currencyUnit}
                                 </span>
                             </div>
@@ -229,29 +229,29 @@ const PlayerCard = () => {
 
                 {/* SOLD OVERLAY BANNER */}
                 {auctionStatus === "SOLD" && (
-                    <div className="absolute inset-0 bg-emerald-950/95 flex flex-col items-center justify-center text-center p-8 z-30 animate-fade-in">
+                    <div className="absolute inset-0 bg-emerald-950/95 flex flex-col items-center justify-center text-center p-4 z-30 animate-fade-in">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-500/20 blur-[120px] rounded-full pointer-events-none" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-500/20 blur-[100px] rounded-full pointer-events-none" />
 
-                        <div className="relative z-10 flex flex-col items-center gap-4 animate-scale-up">
-                            <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center text-slate-950 shadow-2xl shadow-emerald-500/40">
-                                <Icon icon="solar:check-circle-bold" className="text-5xl" />
+                        <div className="relative z-10 flex flex-col items-center gap-2.5 animate-scale-up">
+                            <div className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center text-slate-950 shadow-2xl shadow-emerald-500/40">
+                                <Icon icon="solar:check-circle-bold" className="text-3xl" />
                             </div>
-                            <h2 className="text-6xl md:text-7xl font-black text-emerald-400 tracking-tighter uppercase drop-shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-pulse">
+                            <h2 className="text-3xl md:text-4xl font-black text-emerald-400 tracking-tighter uppercase drop-shadow-[0_0_30px_rgba(16,185,129,0.3)]">
                                 PLAYER SOLD
                             </h2>
-                            <div className="space-y-1 mt-4">
-                                <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">Sold To Franchise</p>
-                                <p className="text-3xl font-extrabold text-white flex items-center justify-center gap-3">
+                            <div className="space-y-0.5 mt-2">
+                                <p className="text-slate-400 text-[10px] uppercase tracking-widest font-semibold">Sold To Franchise</p>
+                                <p className="text-xl font-extrabold text-white flex items-center justify-center gap-2">
                                     {currentHighestBidTeam?.logo && (
-                                        <img src={currentHighestBidTeam.logo} alt="" className="w-10 h-10 rounded-xl object-cover border border-white/10" />
+                                        <img src={currentHighestBidTeam.logo} alt="" className="w-8 h-8 rounded-lg object-cover border border-white/10" />
                                     )}
                                     {currentHighestBidTeam?.name || "Unknown Team"}
                                 </p>
                             </div>
-                            <div className="bg-slate-900/60 border border-slate-800 px-8 py-3 rounded-2xl mt-4">
-                                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Purchase Price</p>
-                                <p className="text-4xl font-mono font-bold text-white">{displayPrice} {currencyUnit}</p>
+                            <div className="bg-slate-900/60 border border-slate-800 px-5 py-1.5 rounded-xl mt-2">
+                                <p className="text-[9px] text-slate-500 uppercase tracking-widest font-semibold">Purchase Price</p>
+                                <p className="text-xl font-mono font-bold text-white">{displayPrice} {currencyUnit}</p>
                             </div>
                         </div>
                     </div>
@@ -259,18 +259,18 @@ const PlayerCard = () => {
 
                 {/* UNSOLD OVERLAY BANNER */}
                 {auctionStatus === "UNSOLD" && (
-                    <div className="absolute inset-0 bg-red-950/95 flex flex-col items-center justify-center text-center p-8 z-30 animate-fade-in">
+                    <div className="absolute inset-0 bg-red-950/95 flex flex-col items-center justify-center text-center p-4 z-30 animate-fade-in">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-red-500/20 blur-[120px] rounded-full pointer-events-none" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-red-500/20 blur-[100px] rounded-full pointer-events-none" />
 
-                        <div className="relative z-10 flex flex-col items-center gap-4 animate-scale-up">
-                            <div className="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center text-white shadow-2xl shadow-red-500/40">
-                                <Icon icon="solar:close-circle-bold" className="text-5xl" />
+                        <div className="relative z-10 flex flex-col items-center gap-2.5 animate-scale-up">
+                            <div className="w-14 h-14 rounded-full bg-red-500 flex items-center justify-center text-white shadow-2xl shadow-red-500/40">
+                                <Icon icon="solar:close-circle-bold" className="text-3xl" />
                             </div>
-                            <h2 className="text-6xl md:text-7xl font-black text-red-500 tracking-tighter uppercase drop-shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+                            <h2 className="text-3xl md:text-4xl font-black text-red-500 tracking-tighter uppercase drop-shadow-[0_0_30px_rgba(239,68,68,0.3)]">
                                 PLAYER UNSOLD
                             </h2>
-                            <p className="text-slate-400 mt-2 text-base max-w-sm">
+                            <p className="text-slate-400 mt-1 text-xs max-w-xs">
                                 This player received no bids and remains unsold for this round.
                             </p>
                         </div>
