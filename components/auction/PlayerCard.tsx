@@ -26,6 +26,24 @@ const PlayerCard = () => {
 
         const nextAmount = (activePlayer.currentBid || activePlayer.basePrice) + increment;
 
+        const selectedTeam = teams.find(t => t.id === Number(selectedTeamId));
+        if (selectedTeam) {
+            const MIN_PLAYERS_REQUIRED = 8;
+            const MIN_BASE_PRICE = 500;
+            const purchasedCount = selectedTeam.players?.filter((p: any) => p.sold).length || 0;
+            const requiredPlayersCount = Math.max(0, MIN_PLAYERS_REQUIRED - purchasedCount);
+            const isLeading = activePlayer && activePlayer.teamId === selectedTeam.id;
+            const effectivePurse = isLeading && activePlayer.currentBid !== null
+                ? selectedTeam.purse + activePlayer.currentBid
+                : selectedTeam.purse;
+            const maxAvailableBid = effectivePurse - (requiredPlayersCount * MIN_BASE_PRICE);
+
+            if (nextAmount > maxAvailableBid) {
+                alert(`This team cannot bid more than ₹${maxAvailableBid.toLocaleString()}.`);
+                return;
+            }
+        }
+
         try {
             setBidLoading(true);
             await api.post("/auction/bid", { playerId: activePlayer.id, teamId: Number(selectedTeamId), amount: nextAmount });
@@ -125,6 +143,20 @@ const PlayerCard = () => {
 
     const displayPrice = (activePlayer.currentBid || activePlayer.basePrice).toLocaleString();
     const currencyUnit = "pts";
+
+    const selectedTeam = teams.find(t => t.id === Number(selectedTeamId));
+    let selectedTeamMaxBid = 0;
+    if (selectedTeam) {
+        const MIN_PLAYERS_REQUIRED = 8;
+        const MIN_BASE_PRICE = 500;
+        const purchasedCount = selectedTeam.players?.filter((p: any) => p.sold).length || 0;
+        const requiredPlayersCount = Math.max(0, MIN_PLAYERS_REQUIRED - purchasedCount);
+        const isLeading = activePlayer && activePlayer.teamId === selectedTeam.id;
+        const effectivePurse = isLeading && activePlayer.currentBid !== null
+            ? selectedTeam.purse + activePlayer.currentBid
+            : selectedTeam.purse;
+        selectedTeamMaxBid = Math.max(0, effectivePurse - (requiredPlayersCount * MIN_BASE_PRICE));
+    }
 
     return (
         <section className="flex flex-col gap-4 relative">
@@ -307,6 +339,19 @@ const PlayerCard = () => {
                                 ))}
                             </select>
                         </div>
+
+                        {selectedTeam && (
+                            <div className="bg-slate-900/60 border border-slate-850 rounded-xl p-3 text-xs space-y-1.5 animate-fade-in">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remaining Purse</span>
+                                    <span className="font-mono font-bold text-white">₹{selectedTeam.purse.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Maximum Available Bid</span>
+                                    <span className="font-mono font-bold text-amber-400">₹{selectedTeamMaxBid.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Fixed Increment Buttons 3x2 Grid */}
                         <div>

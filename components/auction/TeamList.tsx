@@ -15,6 +15,15 @@ const TeamList = () => {
         // Check if this team is the current leading bidder for the active player
         const isLeadingBidder = activePlayer && !activePlayer.sold && activePlayer.teamId === team.id;
 
+        // Dynamic Maximum Available Bid Calculation
+        const MIN_PLAYERS_REQUIRED = 8;
+        const MIN_BASE_PRICE = 500;
+        const requiredPlayersCount = Math.max(0, MIN_PLAYERS_REQUIRED - playersPurchasedCount);
+        const effectivePurse = isLeadingBidder && activePlayer?.currentBid !== null && activePlayer?.currentBid !== undefined
+            ? team.purse + activePlayer.currentBid
+            : team.purse;
+        const maxAvailableBid = effectivePurse - (requiredPlayersCount * MIN_BASE_PRICE);
+
         return {
             id: team.id,
             name: team.name,
@@ -22,6 +31,7 @@ const TeamList = () => {
             purse: team.purse,
             purchasedCount: playersPurchasedCount,
             isLeadingBidder,
+            maxAvailableBid,
         };
     });
 
@@ -49,13 +59,20 @@ const TeamList = () => {
 
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full items-start">
                 {teamChunks.map((chunk, index) => (
-                    <div key={index} className="flex-1 min-w-[240px] max-w-full overflow-hidden rounded-xl border border-slate-850 bg-slate-900/10 backdrop-blur-md">
-                        <table className="w-full text-left border-collapse">
+                    <div key={index} className="flex-1 min-w-[290px] max-w-full overflow-hidden rounded-xl border border-slate-850 bg-slate-900/10 backdrop-blur-md">
+                        <table className="w-full text-left table-fixed">
+                            <colgroup>
+                                <col />
+                                <col style={{ width: "52px" }} />
+                                <col style={{ width: "88px" }} />
+                                <col style={{ width: "96px" }} />
+                            </colgroup>
                             <thead>
                                 <tr className="border-b border-slate-800 bg-slate-950/30 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                     <th className="py-2 px-3">Team Name</th>
-                                    <th className="py-2 px-3 text-center">Players</th>
-                                    <th className="py-2 px-3 text-right">Purse Left</th>
+                                    <th className="py-2 px-3 text-center whitespace-nowrap">Players</th>
+                                    <th className="py-2 px-3 text-right whitespace-nowrap">Purse Left</th>
+                                    <th className="py-2 px-3 text-right whitespace-nowrap text-amber-500">Max Bid</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800/30 text-xs">
@@ -90,8 +107,11 @@ const TeamList = () => {
                                         <td className="py-1.5 px-3 text-center font-mono font-bold text-xs">
                                             {team.purchasedCount}
                                         </td>
-                                        <td className={`py-1.5 px-3 text-right font-mono font-bold text-xs ${team.isLeadingBidder ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                                        <td className={`py-1.5 px-3 text-right font-mono font-bold text-xs ${team.isLeadingBidder ? 'text-cyan-400' : 'text-slate-300'}`}>
                                             ₹{team.purse.toLocaleString()}
+                                        </td>
+                                        <td className="py-1.5 px-3 text-right font-mono font-bold text-xs text-amber-400">
+                                            ₹{Math.max(0, team.maxAvailableBid).toLocaleString()}
                                         </td>
                                     </tr>
                                 ))}

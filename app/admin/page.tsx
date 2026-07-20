@@ -337,6 +337,25 @@ export default function AdminDashboard() {
       }
     }
 
+    const selectedTeam = teams.find(t => t.id === Number(selectedBidTeamId));
+    if (selectedTeam) {
+      const MIN_PLAYERS_REQUIRED = 8;
+      const MIN_BASE_PRICE = 500;
+      const purchasedCount = selectedTeam.players?.filter((p: any) => p.sold).length || 0;
+      const requiredPlayersCount = Math.max(0, MIN_PLAYERS_REQUIRED - purchasedCount);
+      const isLeading = activePlayer && activePlayer.teamId === selectedTeam.id;
+      const effectivePurse = isLeading && activePlayer.currentBid !== null
+          ? selectedTeam.purse + activePlayer.currentBid
+          : selectedTeam.purse;
+      const maxAvailableBid = effectivePurse - (requiredPlayersCount * MIN_BASE_PRICE);
+
+      if (amount > maxAvailableBid) {
+        showToast("error", `This team cannot bid more than ₹${maxAvailableBid.toLocaleString()}.`);
+        setLoading(p => ({ ...p, action: false }));
+        return;
+      }
+    }
+
     try {
       await api.post("/auction/bid", {
         playerId: activePlayer.id,
@@ -419,6 +438,20 @@ export default function AdminDashboard() {
 
   const activeLeadingTeam = teams.find(t => t.id === activePlayer?.teamId);
   const BID_INCREMENTS = [500, 1000, 2000, 3000, 4000, 5000];
+
+  const selectedBidTeam = teams.find(t => t.id === Number(selectedBidTeamId));
+  let selectedBidTeamMaxBid = 0;
+  if (selectedBidTeam) {
+    const MIN_PLAYERS_REQUIRED = 8;
+    const MIN_BASE_PRICE = 500;
+    const purchasedCount = selectedBidTeam.players?.filter((p: any) => p.sold).length || 0;
+    const requiredPlayersCount = Math.max(0, MIN_PLAYERS_REQUIRED - purchasedCount);
+    const isLeading = activePlayer && activePlayer.teamId === selectedBidTeam.id;
+    const effectivePurse = isLeading && activePlayer.currentBid !== null
+        ? selectedBidTeam.purse + activePlayer.currentBid
+        : selectedBidTeam.purse;
+    selectedBidTeamMaxBid = Math.max(0, effectivePurse - (requiredPlayersCount * MIN_BASE_PRICE));
+  }
 
   return (
     <div className="min-h-screen bg-[#090a0f] text-white p-6 md:p-12 font-sans selection:bg-purple-500/30">
@@ -533,6 +566,19 @@ export default function AdminDashboard() {
                     ))}
                   </select>
                 </div>
+
+                {selectedBidTeam && (
+                  <div className="bg-slate-900/60 border border-slate-850 rounded-xl p-3 text-xs space-y-1.5 animate-fade-in">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remaining Purse</span>
+                      <span className="font-mono font-bold text-white">₹{selectedBidTeam.purse.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Maximum Available Bid</span>
+                      <span className="font-mono font-bold text-amber-400">₹{selectedBidTeamMaxBid.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Custom Increment Amount</label>
