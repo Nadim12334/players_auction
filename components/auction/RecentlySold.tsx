@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useAuction, Player, Team } from "./AuctionProvider";
 
 const RecentlySold = () => {
     const { players, teams } = useAuction();
+    const [isExpanded, setIsExpanded] = useState(true);
 
     const formatPrice = (amount: number) => {
         return `${amount.toLocaleString()} pts`;
@@ -28,11 +29,23 @@ const RecentlySold = () => {
 
     return (
         <section className="lg:col-span-12 mt-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
-                <Icon icon="solar:bag-check-linear" width="16" />
-                Recently Sold
-            </h2>
-            <div className="glass-panel rounded-xl overflow-hidden overflow-x-auto">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer group focus:outline-none"
+            >
+                <span className="flex items-center gap-2">
+                    <Icon icon="solar:bag-check-linear" width="16" />
+                    Recently Sold
+                </span>
+                <Icon
+                    icon="solar:alt-arrow-down-bold"
+                    className={`transition-transform duration-300 ${isExpanded ? "rotate-0" : "-rotate-95"}`}
+                    width="16"
+                />
+            </button>
+
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? "max-h-[600px] opacity-100 mt-4" : "max-h-0 opacity-0 pointer-events-none"}`}>
+                <div className="glass-panel rounded-xl overflow-hidden overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="text-xs text-slate-500 uppercase tracking-wider border-b border-slate-800/50 bg-slate-900/40">
@@ -81,6 +94,7 @@ const RecentlySold = () => {
                         ))}
                     </tbody>
                 </table>
+            </div>
             </div>
         </section>
     );

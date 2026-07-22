@@ -14,23 +14,23 @@ export default function Home() {
 
         <main className="flex-1 max-w-[1700px] mx-auto w-full p-4 md:p-8 flex flex-col gap-8">
 
-          {/* Main Grid: Left Side (Current Player), Right Side (Teams) */}
+          {/* Top Row: Player Card (left) + Franchise Standings (right) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            {/* Left Side: Live Player Card */}
+            {/* Left: Live Player Card */}
             <div className="lg:col-span-5">
               <PlayerCard />
             </div>
 
-            {/* Right Side: Franchises Grid */}
+            {/* Right: Franchise Standings — vertically scrollable */}
             <div className="lg:col-span-7">
               <TeamList />
             </div>
 
           </div>
 
-          {/* Bottom Grid: Live Feed & Recently Sold */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-slate-900 pt-8 mt-4">
+          {/* Bottom Row: Recently Sold + Live Bid History */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-t border-slate-900 pt-8">
 
             <div className="lg:col-span-6">
               <RecentlySold />

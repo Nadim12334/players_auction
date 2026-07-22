@@ -1,30 +1,44 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useAuction } from "./AuctionProvider";
 
 const LiveFeed = () => {
     const { bids, teams, players } = useAuction();
+    const [isExpanded, setIsExpanded] = useState(true);
 
     const formatPrice = (amount: number) => {
         return `${amount.toLocaleString()} pts`;
     };
 
     return (
-        <aside className="lg:col-span-3 flex flex-col gap-6 h-full">
-            <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+        <aside className="lg:col-span-3 flex flex-col gap-4 h-full">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-slate-400 hover:text-white transition-colors cursor-pointer group focus:outline-none mb-2"
+            >
+                <span className="flex items-center gap-2">
                     <Icon icon="solar:history-bold" width="16" />
                     Live Bid History
-                </h2>
-                <div className="flex items-center gap-2 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Live</span>
+                </span>
+                <div className="flex items-center gap-3">
+                    {isExpanded && (
+                        <div className="flex items-center gap-2 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                            <span className="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Live</span>
+                        </div>
+                    )}
+                    <Icon
+                        icon="solar:alt-arrow-down-bold"
+                        className={`transition-transform duration-300 ${isExpanded ? "rotate-0" : "-rotate-95"}`}
+                        width="16"
+                    />
                 </div>
-            </div>
+            </button>
 
-            <div className="glass-panel rounded-xl flex-1 flex flex-col p-4 overflow-hidden max-h-[700px]">
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-col flex-1 ${isExpanded ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"}`}>
+                <div className="glass-panel rounded-xl flex-1 flex flex-col p-4 overflow-hidden max-h-[700px]">
                 {/* Stats Summary */}
                 <div className="grid grid-cols-2 gap-3 mb-6 pb-6 border-b border-slate-800/50">
                     <div className="bg-slate-900/60 rounded-lg p-3 border border-white/5">
@@ -98,6 +112,7 @@ const LiveFeed = () => {
                         </div>
                     )}
                 </div>
+            </div>
             </div>
         </aside>
     );
