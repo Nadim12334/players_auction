@@ -34,6 +34,9 @@ export default function AdminDashboard() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [importSummary, setImportSummary] = useState<any>(null);
 
+  // Unsold Players States
+  const [unsoldPlayers, setUnsoldPlayers] = useState<any[]>([]);
+
   // Inline Base Price Edit States
   const [editingPlayerBasePriceId, setEditingPlayerBasePriceId] = useState<number | null>(null);
   const [editingBasePrice, setEditingBasePrice] = useState<string>("");
@@ -42,6 +45,7 @@ export default function AdminDashboard() {
     fetchPlayers();
     fetchTeams();
     fetchActiveState();
+    fetchUnsoldPlayers();
 
     // Socket listeners for real-time dashboard sync
     socket.on("auctionStateUpdate", (state) => {
@@ -50,6 +54,7 @@ export default function AdminDashboard() {
       fetchActiveStateData(state.currentPlayerId);
       fetchPlayers();
       fetchTeams();
+      fetchUnsoldPlayers();
     });
 
     socket.on("newBid", () => {
@@ -58,11 +63,32 @@ export default function AdminDashboard() {
       fetchTeams();
     });
 
+    socket.on("unsoldUpdated", () => {
+      fetchUnsoldPlayers();
+      fetchPlayers();
+    });
+
+    socket.on("playerSold", () => {
+      fetchUnsoldPlayers();
+      fetchPlayers();
+    });
+
     return () => {
       socket.off("auctionStateUpdate");
       socket.off("newBid");
+      socket.off("unsoldUpdated");
+      socket.off("playerSold");
     };
   }, []);
+
+  const fetchUnsoldPlayers = async () => {
+    try {
+      const res = await api.get("/admin/unsold-players");
+      setUnsoldPlayers(res.data);
+    } catch (e) {
+      console.error("Failed to fetch unsold players", e);
+    }
+  };
 
   const fetchPlayers = async () => {
     try {
@@ -237,6 +263,50 @@ export default function AdminDashboard() {
       phoneNumber: player.phoneNumber,
     });
     window.scrollTo({ top: 300, behavior: 'smooth' });
+  };
+
+  const handleAuctionNow = async (id: number) => {
+    setLoading((p) => ({ ...p, action: true }));
+    try {
+      await api.post(`/admin/unsold-players/${id}/auction-now`);
+      showToast("success", "Player loaded for auction now!");
+      fetchUnsoldPlayers();
+      fetchPlayers();
+      fetchActiveState();
+    } catch (error: any) {
+      showToast("error", error?.response?.data?.message || "Failed to load player for auction");
+    } finally {
+      setLoading((p) => ({ ...p, action: false }));
+    }
+  };
+
+  const handleMoveToEnd = async (id: number) => {
+    setLoading((p) => ({ ...p, action: true }));
+    try {
+      await api.post(`/admin/unsold-players/${id}/move-to-end`);
+      showToast("success", "Player moved to end of queue!");
+      fetchUnsoldPlayers();
+      fetchPlayers();
+    } catch (error: any) {
+      showToast("error", error?.response?.data?.message || "Failed to move player to end");
+    } finally {
+      setLoading((p) => ({ ...p, action: false }));
+    }
+  };
+
+  const handleRemoveUnsold = async (id: number) => {
+    if (!confirm("Are you sure you want to permanently remove this player from the tournament auction?")) return;
+    setLoading((p) => ({ ...p, action: true }));
+    try {
+      await api.delete(`/admin/unsold-players/${id}`);
+      showToast("success", "Player removed permanently!");
+      fetchUnsoldPlayers();
+      fetchPlayers();
+    } catch (error: any) {
+      showToast("error", error?.response?.data?.message || "Failed to remove player");
+    } finally {
+      setLoading((p) => ({ ...p, action: false }));
+    }
   };
 
   const handleImportSubmit = async () => {
@@ -665,6 +735,118 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
+        </section>
+
+        {/* ========================================================= */}
+        {/* UNSOLD PLAYERS MANAGEMENT SECTION                         */}
+        {/* ========================================================= */}
+        <section className="bg-slate-950/80 border border-slate-800/80 p-6 md:p-8 rounded-3xl backdrop-blur-xl shadow-2xl space-y-6">
+          <div className="flex justify-between items-center flex-wrap gap-4 border-b border-slate-800 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20">
+                <Icon icon="solar:close-circle-bold" className="text-2xl" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  Unsold Players
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
+                    {unsoldPlayers.length}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Recall unsold players back to the auction or manage their position.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={fetchUnsoldPlayers}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-850 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Icon icon="solar:refresh-bold" />
+              Refresh List
+            </button>
+          </div>
+
+          {unsoldPlayers.length === 0 ? (
+            <div className="py-12 text-center text-slate-500 bg-slate-900/30 border border-slate-850 rounded-2xl flex flex-col items-center gap-2">
+              <Icon icon="solar:user-bold" className="text-3xl opacity-30" />
+              <p className="text-sm font-semibold">No unsold players at the moment</p>
+              <p className="text-xs text-slate-600">When a player is marked unsold during auction, they will appear here.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {unsoldPlayers.map((player) => (
+                <div
+                  key={player.id}
+                  className="bg-slate-900/60 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all"
+                >
+                  <div className="flex gap-3.5 items-center">
+                    {/* Photo */}
+                    <div className="w-16 h-16 rounded-xl bg-slate-800 border border-slate-700/60 overflow-hidden flex-shrink-0 flex items-center justify-center font-bold text-slate-500">
+                      {player.photo ? (
+                        <img src={player.photo} alt={player.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Icon icon="solar:user-bold" className="text-2xl" />
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-wider">
+                          UNSOLD
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-semibold truncate">
+                          {player.fromWhere || "Local"}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-extrabold text-white uppercase tracking-tight truncate mt-1">
+                        {player.name}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-semibold">
+                        Category: <span className="text-indigo-400">{player.category}</span>
+                      </p>
+                      <p className="text-xs font-mono font-bold text-emerald-400 mt-0.5">
+                        Base Price: ₹{player.basePrice?.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-3 gap-1.5 pt-3 border-t border-slate-850">
+                    <button
+                      onClick={() => handleAuctionNow(player.id)}
+                      disabled={loading.action}
+                      className="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-extrabold py-2 px-2 rounded-xl text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 shadow-md disabled:opacity-40"
+                      title="Immediately load this player as active for auctioning"
+                    >
+                      <Icon icon="solar:gavel-bold" />
+                      Auction Now
+                    </button>
+                    <button
+                      onClick={() => handleMoveToEnd(player.id)}
+                      disabled={loading.action}
+                      className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 font-extrabold py-2 px-2 rounded-xl text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 disabled:opacity-40"
+                      title="Move player to the end of the available auction queue"
+                    >
+                      <Icon icon="solar:sort-from-top-to-bottom-bold" />
+                      Move To End
+                    </button>
+                    <button
+                      onClick={() => handleRemoveUnsold(player.id)}
+                      disabled={loading.action}
+                      className="bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 font-extrabold py-2 px-2 rounded-xl text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 disabled:opacity-40"
+                      title="Permanently remove player from tournament auction"
+                    >
+                      <Icon icon="solar:trash-bin-trash-bold" />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ========================================================= */}
