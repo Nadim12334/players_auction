@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { api } from "../../services/api";
 import { socket } from "../../services/socket";
 import { Icon } from "@iconify/react";
@@ -445,6 +446,44 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSendWhatsApp = async (player: any) => {
+    try {
+      const res = await api.get("/settings");
+      const settings = res.data || {};
+      const tournamentName = settings.tournamentName || "Kudal Premier League";
+      const template = settings.whatsappTemplate || `🏏 Congratulations {{playerName}}!\n\nYou have been selected in {{tournamentName}}.\n\n🏆 Team\n{{teamName}}\n\n💰 Sold Amount\n₹{{soldAmount}}\n\n📂 Category\n{{category}}\n\nWe wish you all the best for the tournament!\n\nThank you.`;
+
+      let winningTeam = teams.find(t => t.id === player.teamId);
+      if (!winningTeam && player.teamId) {
+        try {
+          const teamRes = await api.get("/teams");
+          winningTeam = teamRes.data?.find((t: any) => t.id === player.teamId);
+        } catch (err) {
+          console.error("Error fetching teams for WhatsApp:", err);
+        }
+      }
+      const teamName = winningTeam ? winningTeam.name : "N/A";
+      const soldAmount = (player.currentBid !== null && player.currentBid !== undefined ? player.currentBid : player.basePrice).toLocaleString();
+
+      let message = template;
+      message = message.replace(/\{\{\s*playerName\s*\}\}/gi, player.name || "");
+      message = message.replace(/\{\{\s*teamName\s*\}\}/gi, teamName);
+      message = message.replace(/\{\{\s*soldAmount\s*\}\}/gi, soldAmount);
+      message = message.replace(/\{\{\s*category\s*\}\}/gi, player.category || "");
+      message = message.replace(/\{\{\s*tournamentName\s*\}\}/gi, tournamentName);
+
+      const cleanPhone = (player.phoneNumber || "").replace(/[^0-9]/g, "");
+      const whatsappUrl = cleanPhone
+        ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
+        : `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+      window.open(whatsappUrl, "_blank");
+    } catch (e) {
+      console.error("Failed to load settings for WhatsApp", e);
+      showToast("error", "Failed to load WhatsApp settings");
+    }
+  };
+
   const handleSellPlayer = async () => {
     if (!activePlayer) return;
     if (!activePlayer.teamId) {
@@ -456,11 +495,18 @@ export default function AdminDashboard() {
     try {
       await api.post(`/admin/auction/sell/${activePlayer.id}`);
       const winner = teams.find(t => t.id === activePlayer.teamId)?.name;
-      showToast("success", `Player SOLD to ${winner}!`);
+      showToast("success", `Player SOLD to ${winner}! Opening WhatsApp...`);
+      const soldPlayerRef = { ...activePlayer, sold: true };
+
       // Refresh local state immediately
       fetchActiveState();
       fetchPlayers();
       fetchTeams();
+
+      // Automatically trigger WhatsApp window with prefilled variables
+      setTimeout(() => {
+        handleSendWhatsApp(soldPlayerRef);
+      }, 300);
     } catch (error: any) {
       showToast("error", error?.response?.data?.message || error.message);
     } finally {
@@ -474,7 +520,6 @@ export default function AdminDashboard() {
     try {
       await api.post(`/admin/auction/unsold/${activePlayer.id}`);
       showToast("success", "Player marked as UNSOLD!");
-      // Refresh local state immediately
       fetchActiveState();
       fetchPlayers();
       fetchTeams();
@@ -495,7 +540,6 @@ export default function AdminDashboard() {
       } else {
         showToast("success", "No more unsold players left!");
       }
-      // Refresh local state immediately
       fetchActiveState();
       fetchPlayers();
       fetchTeams();
@@ -542,13 +586,25 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <header className="mb-10 text-center">
-        <h1 className="text-5xl font-extrabold bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-          Titan Megapool Control Center
-        </h1>
-        <p className="text-zinc-400 mt-2 text-md font-medium tracking-wider">
-          Manage local tournament configuration and operate real-time manual auction dashboard.
-        </p>
+      <header className="mb-10 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent text-left">
+            Titan Megapool Control Center
+          </h1>
+          <p className="text-zinc-400 mt-1 text-sm font-medium tracking-wider text-left">
+            Manage local tournament configuration and operate real-time manual auction dashboard.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/settings"
+            className="bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold px-5 py-3 rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-purple-950/40 transition-all border border-purple-400/30"
+          >
+            <Icon icon="solar:settings-bold" className="text-lg" />
+            Tournament Settings
+          </Link>
+        </div>
       </header>
 
       <div className="max-w-7xl mx-auto space-y-8 relative">
@@ -733,6 +789,17 @@ export default function AdminDashboard() {
                 <Icon icon="solar:round-alt-arrow-right-bold" className="text-base" />
                 Next Player
               </button>
+
+              {/* Send WhatsApp Button for Active Player when Sold */}
+              {activePlayer && (activeState.status === "SOLD" || activePlayer.sold) && (
+                <button
+                  onClick={() => handleSendWhatsApp(activePlayer)}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 border border-emerald-400/30 animate-pulse"
+                >
+                  <Icon icon="logos:whatsapp-icon" className="text-base" />
+                  Send WhatsApp Notification
+                </button>
+              )}
             </div>
           </div>
         </section>
@@ -1406,6 +1473,15 @@ export default function AdminDashboard() {
                                   className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-30 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-cyan-900/20 uppercase tracking-wider"
                                 >
                                   {loading.start === player.id ? "..." : "Load to Table"}
+                                </button>
+                              )}
+                              {player.sold && player.teamId && (
+                                <button
+                                  onClick={() => handleSendWhatsApp(player)}
+                                  title="Send WhatsApp Notification"
+                                  className="p-1.5 px-2.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 rounded-lg transition-all text-xs font-bold flex items-center gap-1 border border-emerald-500/20"
+                                >
+                                  <Icon icon="logos:whatsapp-icon" className="text-xs" /> WhatsApp
                                 </button>
                               )}
                               <button
