@@ -5,7 +5,7 @@ import { Icon } from "@iconify/react";
 import { useAuction } from "./AuctionProvider";
 
 const PlayerCard = () => {
-    const { players, teams, currentPlayerId, auctionStatus } = useAuction();
+    const { players, teams, currentPlayerId, auctionStatus, recalledNotice } = useAuction();
 
     const activePlayer = players.find((p) => p.id === currentPlayerId);
 
@@ -33,9 +33,20 @@ const PlayerCard = () => {
 
     const currentHighestBidTeam = teams.find((t) => t.id === activePlayer.teamId);
     const displayPrice = (activePlayer.currentBid || activePlayer.basePrice).toLocaleString();
+    const isRecalled = recalledNotice && recalledNotice.player.id === activePlayer.id;
 
     return (
         <section className="flex flex-col gap-4 relative w-full">
+            {/* RE-AUCTION RECALLED PLAYER BANNER */}
+            {isRecalled && (
+                <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-slate-950 font-black px-6 py-2.5 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.8)] border border-amber-300 flex items-center justify-center gap-3 animate-pulse text-xs sm:text-sm uppercase tracking-widest z-20">
+                    <Icon icon="solar:restart-bold" className="text-xl animate-spin" />
+                    <span>
+                        {recalledNotice.mode === "AUCTION_NOW" ? "RE-AUCTION • RECALLED PLAYER BACK ON TABLE!" : "RE-AUCTION • COMING BACK TO AUCTION!"}
+                    </span>
+                </div>
+            )}
+
             <div className="relative bg-slate-950 border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl group min-h-[480px] md:min-h-[520px] flex flex-col">
                 {/* Background Glow */}
                 <div className="absolute top-0 left-1/3 w-1/2 h-40 bg-gradient-to-b from-cyan-500/15 to-transparent blur-3xl rounded-full pointer-events-none"></div>
@@ -124,7 +135,7 @@ const PlayerCard = () => {
                                     </span>
                                 </div>
 
-                                <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight glow-text flex items-baseline gap-2 font-mono">
+                                <div className="text-3xl  font-black text-white tracking-tight glow-text flex items-baseline gap-2 font-mono">
                                     <span className="text-3xl sm:text-4xl text-cyan-400">₹</span>
                                     {displayPrice}
                                 </div>

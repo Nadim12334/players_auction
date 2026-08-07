@@ -5,7 +5,7 @@ import { Icon } from "@iconify/react";
 import { useAuction } from "./AuctionProvider";
 
 const StreamOverlay = () => {
-    const { players, currentPlayerId, auctionStatus, teams } = useAuction();
+    const { players, currentPlayerId, auctionStatus, teams, recalledNotice } = useAuction();
 
     // Ensure 100% transparency for OBS Studio Browser Source background
     useEffect(() => {
@@ -18,6 +18,7 @@ const StreamOverlay = () => {
     }, []);
 
     const activePlayer = players.find((p) => p.id === currentPlayerId);
+    const isRecalled = recalledNotice && activePlayer && recalledNotice.player.id === activePlayer.id;
 
     const displayPrice = activePlayer
         ? (activePlayer.currentBid || activePlayer.basePrice).toLocaleString()
@@ -48,8 +49,13 @@ const StreamOverlay = () => {
                 {/* FLOATING TOP PLAYER PORTRAIT BADGE (Centered above the banner) */}
                 <div className="absolute -top-20 sm:-top-24 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
                     
-                    {/* Status Pill on top of portrait */}
-                    {auctionStatus === "BIDDING" ? (
+                    {/* Status / Recalled Pill on top of portrait */}
+                    {isRecalled ? (
+                        <div className="mb-1 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_20px_rgba(245,158,11,0.9)] border border-amber-200 animate-pulse">
+                            <Icon icon="solar:restart-bold" className="text-xs animate-spin" />
+                            RE-AUCTION
+                        </div>
+                    ) : auctionStatus === "BIDDING" ? (
                         <div className="mb-1 px-3 py-0.5 rounded-full bg-cyan-500 text-slate-950 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.8)] border border-cyan-300">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-950 opacity-75"></span>
