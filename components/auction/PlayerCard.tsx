@@ -3,6 +3,7 @@
 import React from "react";
 import { Icon } from "@iconify/react";
 import { useAuction } from "./AuctionProvider";
+import { getImageUrl } from "../../services/image";
 
 const PlayerCard = () => {
     const { players, teams, currentPlayerId, auctionStatus, recalledNotice } = useAuction();
@@ -55,10 +56,7 @@ const PlayerCard = () => {
                     {/* Left Panel: Large Player Photo (7 of 12 columns = ~58% width) */}
                     <div className="w-full md:w-7/12 relative bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-slate-800/60 min-h-[320px] md:min-h-[520px]">
                         <img
-                            src={
-                                activePlayer.photo ||
-                                "https://images.unsplash.com/photo-1624194686522-83788533d11b?q=80&w=800&auto=format&fit=crop"
-                            }
+                            src={getImageUrl(activePlayer.photo)}
                             className="w-full h-full object-cover object-top opacity-95 transition-transform duration-700 group-hover:scale-105"
                             alt={activePlayer.name}
                         />
@@ -148,7 +146,7 @@ const PlayerCard = () => {
                                         {currentHighestBidTeam.logo && (
                                             <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20 flex-shrink-0">
                                                 <img
-                                                    src={currentHighestBidTeam.logo}
+                                                    src={getImageUrl(currentHighestBidTeam.logo)}
                                                     alt=""
                                                     className="w-full h-full object-cover"
                                                 />
@@ -184,7 +182,7 @@ const PlayerCard = () => {
                                 <p className="text-2xl font-black text-white flex items-center justify-center gap-3">
                                     {currentHighestBidTeam?.logo && (
                                         <img
-                                            src={currentHighestBidTeam.logo}
+                                            src={getImageUrl(currentHighestBidTeam.logo)}
                                             alt=""
                                             className="w-9 h-9 rounded-lg object-cover border border-white/20"
                                         />

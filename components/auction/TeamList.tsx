@@ -3,6 +3,7 @@
 import React from "react";
 import { Icon } from "@iconify/react";
 import { useAuction } from "./AuctionProvider";
+import { getImageUrl } from "../../services/image";
 
 const TeamList = () => {
     const { teams, players, currentPlayerId } = useAuction();
@@ -123,7 +124,7 @@ const TeamList = () => {
                                                 <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700/60 overflow-hidden flex items-center justify-center font-bold text-[9px] text-slate-400 shadow-inner flex-shrink-0">
                                                     {team.logo ? (
                                                         <img
-                                                            src={team.logo}
+                                                            src={getImageUrl(team.logo)}
                                                             alt={team.name}
                                                             className="w-full h-full object-cover"
                                                         />

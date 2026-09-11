@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useAuction, Player, Team } from "./AuctionProvider";
+import { getImageUrl } from "../../services/image";
 
 const RecentlySold = () => {
     const { players, teams } = useAuction();
@@ -18,6 +19,7 @@ const RecentlySold = () => {
             const team = teams.find((t: Team) => t.id === p.teamId);
             return {
                 name: p.name,
+                photo: p.photo,
                 category: p.category,
                 soldTo: team ? team.name.split(" ").map((w: string) => w[0]).join("").toUpperCase() : "Unknown",
                 price: formatPrice(p.currentBid || p.basePrice),
@@ -66,15 +68,12 @@ const RecentlySold = () => {
                             >
                                 <td className="p-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden">
-                                            {/* Placeholder avatar */}
-                                            <svg
-                                                className="w-full h-full text-slate-500"
-                                                fill="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                            </svg>
+                                        <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0">
+                                            <img
+                                                src={getImageUrl(player.photo)}
+                                                alt={player.name}
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                         <span className="font-medium text-white">{player.name}</span>
                                     </div>

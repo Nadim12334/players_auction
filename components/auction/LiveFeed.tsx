@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import { useAuction } from "./AuctionProvider";
+import { getImageUrl } from "../../services/image";
 
 const LiveFeed = () => {
     const { bids, teams, players } = useAuction();
@@ -75,7 +76,7 @@ const LiveFeed = () => {
 
                                 <div className="flex items-center gap-3">
                                     {team?.logo ? (
-                                        <img src={team.logo} className="w-8 h-8 rounded-lg object-cover border border-white/10" alt="" />
+                                        <img src={getImageUrl(team.logo)} className="w-8 h-8 rounded-lg object-cover border border-white/10" alt="" />
                                     ) : (
                                         <div className="w-8 h-8 rounded-lg bg-slate-800 border border-white/5 flex items-center justify-center font-bold text-[10px] text-slate-500">
                                             {team?.name?.substring(0, 2).toUpperCase()}

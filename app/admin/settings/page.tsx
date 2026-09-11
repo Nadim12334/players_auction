@@ -10,6 +10,8 @@ interface SettingsData {
   tournamentName: string;
   tournamentLogo: string;
   season: string;
+  slug: string;
+  registrationOpen: boolean;
   whatsappTemplate: string;
 }
 
@@ -26,6 +28,8 @@ export default function TournamentSettingsPage() {
     tournamentName: "Kudal Premier League",
     tournamentLogo: "",
     season: "Season 1",
+    slug: "kudal-premier-league",
+    registrationOpen: true,
     whatsappTemplate: `🏏 Congratulations {{playerName}}!\n\nYou have been selected in {{tournamentName}}.\n\n🏆 Team\n{{teamName}}\n\n💰 Sold Amount\n₹{{soldAmount}}\n\n📂 Category\n{{category}}\n\nWe wish you all the best for the tournament!\n\nThank you.`,
   });
 
@@ -48,6 +52,8 @@ export default function TournamentSettingsPage() {
           tournamentName: res.data.tournamentName || "Kudal Premier League",
           tournamentLogo: res.data.tournamentLogo || "",
           season: res.data.season || "Season 1",
+          slug: res.data.slug || "kudal-premier-league",
+          registrationOpen: res.data.registrationOpen !== undefined ? res.data.registrationOpen : true,
           whatsappTemplate: res.data.whatsappTemplate || "",
         });
       }
@@ -222,6 +228,61 @@ export default function TournamentSettingsPage() {
                     placeholder="e.g. Season 1 or 2026"
                     className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors"
                   />
+                </div>
+
+                {/* Tournament Slug */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                    Registration URL Slug
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.slug}
+                    onChange={(e) => setSettings({ ...settings, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") })}
+                    placeholder="e.g. kudal-premier-league"
+                    className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono transition-colors"
+                  />
+                  {settings.slug && (
+                    <p className="text-[11px] text-slate-500">
+                      Registration link: <span className="text-cyan-400 font-mono">/register/{settings.slug}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Registration Status */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                    Registration Status
+                  </label>
+                  <div className="flex items-center gap-3 p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, registrationOpen: true })}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${
+                        settings.registrationOpen
+                          ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                          : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
+                      }`}
+                    >
+                      ✅ Open
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, registrationOpen: false })}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${
+                        !settings.registrationOpen
+                          ? "bg-red-500/20 border-red-500/50 text-red-300"
+                          : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
+                      }`}
+                    >
+                      🚫 Closed
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {settings.registrationOpen
+                      ? "Players can currently register via the public link."
+                      : "Registration is closed. The form will show a closed notice."}
+                  </p>
                 </div>
 
                 {/* Tournament Logo Upload */}

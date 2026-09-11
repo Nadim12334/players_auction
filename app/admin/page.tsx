@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "../../services/api";
 import { socket } from "../../services/socket";
 import { Icon } from "@iconify/react";
+import { getImageUrl } from "../../services/image";
 
 export default function AdminDashboard() {
   const [players, setPlayers] = useState<any[]>([]);
@@ -42,11 +43,18 @@ export default function AdminDashboard() {
   const [editingPlayerBasePriceId, setEditingPlayerBasePriceId] = useState<number | null>(null);
   const [editingBasePrice, setEditingBasePrice] = useState<string>("");
 
+  // Tournament & Excel Export States
+  const [tournaments, setTournaments] = useState<any[]>([]);
+  const [selectedTournamentSlug, setSelectedTournamentSlug] = useState<string>("");
+  const [downloadingRegistration, setDownloadingRegistration] = useState(false);
+  const [downloadingResults, setDownloadingResults] = useState(false);
+
   useEffect(() => {
     fetchPlayers();
     fetchTeams();
     fetchActiveState();
     fetchUnsoldPlayers();
+    fetchTournaments();
 
     // Socket listeners for real-time dashboard sync
     socket.on("auctionStateUpdate", (state) => {
@@ -74,11 +82,18 @@ export default function AdminDashboard() {
       fetchPlayers();
     });
 
+    // Auto-refresh when new player self-registers via the public form
+    socket.on("playerRegistered", () => {
+      fetchPlayers();
+      fetchUnsoldPlayers();
+    });
+
     return () => {
       socket.off("auctionStateUpdate");
       socket.off("newBid");
       socket.off("unsoldUpdated");
       socket.off("playerSold");
+      socket.off("playerRegistered");
     };
   }, []);
 
@@ -130,6 +145,94 @@ export default function AdminDashboard() {
       setActivePlayer(current || null);
     } catch (e) {
       console.error("Failed to fetch active player details", e);
+    }
+  };
+
+  const fetchTournaments = async () => {
+    try {
+      const res = await api.get("/admin/tournaments");
+      if (res.data && res.data.length > 0) {
+        setTournaments(res.data);
+        setSelectedTournamentSlug((prev) => prev || res.data[0].slug);
+      }
+    } catch (e) {
+      console.error("Failed to fetch tournaments", e);
+    }
+  };
+
+  const handleDownloadRegistrationList = async () => {
+    setDownloadingRegistration(true);
+    try {
+      const res = await api.get("/admin/export/players", {
+        params: { tournamentId: selectedTournamentSlug },
+        responseType: "blob",
+      });
+
+      let filename = "Player_Registration_List.xlsx";
+      const disposition = res.headers["content-disposition"];
+      if (disposition) {
+        const match = disposition.match(/filename="?([^";]+)"?/);
+        if (match && match[1]) {
+          filename = decodeURIComponent(match[1]);
+        }
+      }
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      showToast("success", "Download completed successfully.");
+    } catch (err) {
+      console.error("Download registration list error:", err);
+      showToast("error", "Failed to download Excel file.");
+    } finally {
+      setDownloadingRegistration(false);
+    }
+  };
+
+  const handleDownloadAuctionResults = async () => {
+    setDownloadingResults(true);
+    try {
+      const res = await api.get("/admin/export/auction-results", {
+        params: { tournamentId: selectedTournamentSlug },
+        responseType: "blob",
+      });
+
+      let filename = "Auction_Results.xlsx";
+      const disposition = res.headers["content-disposition"];
+      if (disposition) {
+        const match = disposition.match(/filename="?([^";]+)"?/);
+        if (match && match[1]) {
+          filename = decodeURIComponent(match[1]);
+        }
+      }
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      showToast("success", "Download completed successfully.");
+    } catch (err) {
+      console.error("Download auction results error:", err);
+      showToast("error", "Failed to download Excel file.");
+    } finally {
+      setDownloadingResults(false);
     }
   };
 
@@ -596,7 +699,14 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            href="/admin/registrations"
+            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-5 py-3 rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-emerald-950/40 transition-all border border-emerald-400/30"
+          >
+            <Icon icon="solar:users-group-rounded-bold" className="text-lg" />
+            Player Registrations
+          </Link>
           <Link
             href="/admin/settings"
             className="bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold px-5 py-3 rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-purple-950/40 transition-all border border-purple-400/30"
@@ -630,7 +740,7 @@ export default function AdminDashboard() {
               {activePlayer ? (
                 <div className="flex gap-4 items-start">
                   <div className="w-24 h-24 rounded-xl border border-slate-800 overflow-hidden bg-slate-900 flex-shrink-0">
-                    <img src={activePlayer.photo || "https://images.unsplash.com/photo-1624194686522-83788533d11b?q=80&w=800&auto=format&fit=crop"} alt="" className="w-full h-full object-cover" />
+                    <img src={getImageUrl(activePlayer.photo)} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -852,7 +962,7 @@ export default function AdminDashboard() {
                     {/* Photo */}
                     <div className="w-16 h-16 rounded-xl bg-slate-800 border border-slate-700/60 overflow-hidden flex-shrink-0 flex items-center justify-center font-bold text-slate-500">
                       {player.photo ? (
-                        <img src={player.photo} alt={player.name} className="w-full h-full object-cover" />
+                        <img src={getImageUrl(player.photo)} alt={player.name} className="w-full h-full object-cover" />
                       ) : (
                         <Icon icon="solar:user-bold" className="text-2xl" />
                       )}
@@ -1157,7 +1267,7 @@ export default function AdminDashboard() {
               teams.map((team) => (
                 <div key={team.id} className="bg-black/40 border border-white/5 p-4 rounded-2xl flex items-center justify-between group hover:border-indigo-500/50 transition-all">
                   <div className="flex items-center gap-4">
-                    <img src={team.logo} className="w-12 h-12 rounded-xl object-cover border border-white/10" alt="" />
+                    <img src={getImageUrl(team.logo)} className="w-12 h-12 rounded-xl object-cover border border-white/10" alt="" />
                     <div>
                       <h3 className="font-semibold text-white">{team.name}</h3>
                       <p className="text-xs text-zinc-500">{team.purse.toLocaleString()} pts</p>
@@ -1183,44 +1293,74 @@ export default function AdminDashboard() {
           </div>
         </section>
 
-        {/* Bulk Player Import Section */}
+        {/* PLAYER MANAGEMENT & EXCEL EXPORTS SECTION */}
         <section className="relative bg-white/[0.02] border border-white/5 p-8 rounded-3xl backdrop-blur-xl shadow-2xl overflow-hidden hover:border-cyan-500/30 transition-colors duration-500 group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 -mr-16 -mt-16 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all" />
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-white/5 pb-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 border-b border-white/5 pb-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-cyan-500/20 text-cyan-400 rounded-xl">
-                <Icon icon="solar:file-text-bold" className="text-2xl" />
+              <div className="p-3.5 bg-cyan-500/20 text-cyan-400 rounded-2xl border border-cyan-500/30 shadow-lg shadow-cyan-500/10">
+                <Icon icon="solar:users-group-two-rounded-bold-duotone" className="text-3xl" />
               </div>
               <div>
-                <h2 className="text-3xl font-semibold text-white/90">Bulk Import Players</h2>
-                <p className="text-xs text-zinc-400 mt-1">Upload an Excel (.xlsx) or CSV (.csv) file containing player registrations</p>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-bold tracking-tight text-white/95">PLAYER MANAGEMENT</h2>
+                  <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                    Import & Export
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mt-1">Manage tournament player registrations and export official Excel spreadsheets</p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                const headers = ["Full Name", "Mobile Number", "Category", "Village / City (From Where)", "Player Photo (optional)"];
-                const rows = [
-                  ["Rohit Patil", "9876543210", "Batsman", "Kudal", ""],
-                  ["Rohit Patil", "9988776655", "Bowler", "Medha", ""],
-                  ["Rohit Patil", "9765432109", "All-Rounder", "Satara", ""],
-                  ["Suresh Kumar", "9123456789", "Wicket Keeper", "Karad", ""]
-                ];
-                let csvContent = "data:text/csv;charset=utf-8," 
-                  + headers.join(",") + "\n"
-                  + rows.map(r => r.join(",")).join("\n");
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", "players_import_template.csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1.5 transition-colors border border-cyan-500/20 hover:border-cyan-500/40 px-3 py-1.5 rounded-lg bg-cyan-500/5 cursor-pointer self-start"
-            >
-              <Icon icon="solar:download-bold" /> Download CSV Template
-            </button>
+
+            {/* Multi-Tournament Selector & CSV Template */}
+            <div className="flex items-center flex-wrap gap-3 self-start lg:self-center">
+              <div className="flex items-center gap-2 bg-slate-900/80 border border-white/10 px-3.5 py-2 rounded-xl backdrop-blur-md">
+                <Icon icon="solar:cup-star-bold" className="text-amber-400 text-base" />
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Tournament:</span>
+                {tournaments.length > 1 ? (
+                  <select
+                    value={selectedTournamentSlug}
+                    onChange={(e) => setSelectedTournamentSlug(e.target.value)}
+                    className="bg-slate-950 text-xs font-bold text-cyan-300 border border-white/10 rounded-lg px-2 py-1 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  >
+                    {tournaments.map((t) => (
+                      <option key={t.id} value={t.slug} className="bg-slate-900 text-white">
+                        {t.tournamentName}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-xs font-bold text-cyan-300">
+                    {tournaments[0]?.tournamentName || "Kudal Premier League"}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  const headers = ["Full Name", "Mobile Number", "Category", "Village / City (From Where)", "Player Photo (optional)"];
+                  const rows = [
+                    ["Rohit Patil", "9876543210", "Batsman", "Kudal", ""],
+                    ["Rohit Patil", "9988776655", "Bowler", "Medha", ""],
+                    ["Rohit Patil", "9765432109", "All-Rounder", "Satara", ""],
+                    ["Suresh Kumar", "9123456789", "Wicket Keeper", "Karad", ""]
+                  ];
+                  let csvContent = "data:text/csv;charset=utf-8," 
+                    + headers.join(",") + "\n"
+                    + rows.map(r => r.join(",")).join("\n");
+                  const encodedUri = encodeURI(csvContent);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", encodedUri);
+                  link.setAttribute("download", "players_import_template.csv");
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1.5 transition-colors border border-cyan-500/20 hover:border-cyan-500/40 px-3.5 py-2 rounded-xl bg-cyan-500/5 cursor-pointer"
+              >
+                <Icon icon="solar:download-bold" /> Download CSV Template
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -1375,6 +1515,81 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
+
+          {/* EXPORT SECTION: BEFORE & AFTER AUCTION */}
+          <div className="border-t border-white/5 pt-8 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* BEFORE AUCTION: Player Registration List */}
+              <div className="relative bg-slate-900/50 border border-white/10 rounded-2xl p-6 flex flex-col justify-between hover:border-cyan-500/40 transition-all duration-300 group/card">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                      BEFORE AUCTION
+                    </span>
+                    <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20 group-hover/card:scale-105 transition-transform">
+                      <Icon icon="solar:document-text-bold-duotone" className="text-xl" />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">Player Registration List</h3>
+                  <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+                    Download the complete list of registered players with contact numbers, categories, and locations before the auction starts. (Excludes bidding and team assignments).
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownloadRegistrationList}
+                  disabled={downloadingRegistration}
+                  className="w-full bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-slate-950 font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/40 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {downloadingRegistration ? (
+                    <>
+                      <Icon icon="lucide:loader-2" className="animate-spin text-base" />
+                      <span>Generating Excel...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Icon icon="solar:file-download-bold" className="text-base" />
+                      <span>Download Player Registration List</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* AFTER AUCTION: Auction Result List */}
+              <div className="relative bg-slate-900/50 border border-white/10 rounded-2xl p-6 flex flex-col justify-between hover:border-emerald-500/40 transition-all duration-300 group/card">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      AFTER AUCTION
+                    </span>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover/card:scale-105 transition-transform">
+                      <Icon icon="solar:cup-star-bold-duotone" className="text-xl" />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">Auction Results</h3>
+                  <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+                    Download the complete post-auction results including SOLD/UNSOLD status, acquiring team, base price, and final winning bid for the selected tournament.
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownloadAuctionResults}
+                  disabled={downloadingResults}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-slate-950 font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {downloadingResults ? (
+                    <>
+                      <Icon icon="lucide:loader-2" className="animate-spin text-base" />
+                      <span>Generating Excel...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Icon icon="solar:file-download-bold" className="text-base" />
+                      <span>Download Auction Results</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Auction Queue Section */}
@@ -1416,7 +1631,7 @@ export default function AdminDashboard() {
                     <tr key={player.id} className="group hover:bg-white/[0.01] transition-colors">
                       <td className="py-4 px-4">
                         <img 
-                          src={player.photo || "https://images.unsplash.com/photo-1624194686522-83788533d11b?q=80&w=800&auto=format&fit=crop"} 
+                          src={getImageUrl(player.photo)} 
                           className="w-10 h-10 rounded-full object-cover border border-white/5" 
                           alt="" 
                         />

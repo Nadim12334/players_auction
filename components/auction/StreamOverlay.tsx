@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { useAuction } from "./AuctionProvider";
+import { getImageUrl } from "../../services/image";
 
 const StreamOverlay = () => {
     const { players, currentPlayerId, auctionStatus, teams, recalledNotice } = useAuction();
@@ -83,10 +84,7 @@ const StreamOverlay = () => {
                     <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-gradient-to-b from-cyan-300 via-slate-800 to-cyan-500 shadow-[0_0_25px_rgba(6,182,212,0.6)] border-2 border-cyan-300/90">
                         <div className="w-full h-full rounded-full overflow-hidden bg-slate-950 relative border border-cyan-400/40">
                             <img
-                                src={
-                                    activePlayer.photo ||
-                                    "https://images.unsplash.com/photo-1624194686522-83788533d11b?q=80&w=800&auto=format&fit=crop"
-                                }
+                                src={getImageUrl(activePlayer.photo)}
                                 alt={activePlayer.name}
                                 className="w-full h-full object-cover object-top"
                             />
