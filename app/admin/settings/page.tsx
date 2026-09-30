@@ -172,13 +172,22 @@ export default function TournamentSettingsPage() {
             </p>
           </div>
 
-          <Link
-            href="/admin"
-            className="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg"
-          >
-            <Icon icon="solar:alt-arrow-left-bold" className="text-base" />
-            Back to Dashboard
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin/tournaments"
+              className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white border border-amber-400/30 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg"
+            >
+              <Icon icon="solar:cup-star-bold" className="text-base" />
+              Tournaments Hub
+            </Link>
+            <Link
+              href="/admin"
+              className="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg"
+            >
+              <Icon icon="solar:alt-arrow-left-bold" className="text-base" />
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
 
         {loading ? (

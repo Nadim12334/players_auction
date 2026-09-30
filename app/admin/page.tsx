@@ -152,8 +152,11 @@ export default function AdminDashboard() {
     try {
       const res = await api.get("/admin/tournaments");
       if (res.data && res.data.length > 0) {
-        setTournaments(res.data);
-        setSelectedTournamentSlug((prev) => prev || res.data[0].slug);
+        // Exclude ARCHIVED tournaments from the active live auction console
+        const activeList = res.data.filter((t: any) => t.status !== "ARCHIVED");
+        const listToUse = activeList.length > 0 ? activeList : res.data;
+        setTournaments(listToUse);
+        setSelectedTournamentSlug((prev) => prev || listToUse[0].slug);
       }
     } catch (e) {
       console.error("Failed to fetch tournaments", e);
@@ -700,6 +703,13 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            href="/admin/tournaments"
+            className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-white font-bold px-5 py-3 rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-amber-950/40 transition-all border border-amber-400/30"
+          >
+            <Icon icon="solar:cup-star-bold" className="text-lg" />
+            Tournaments Hub
+          </Link>
           <Link
             href="/admin/registrations"
             className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-5 py-3 rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 shadow-xl shadow-emerald-950/40 transition-all border border-emerald-400/30"
